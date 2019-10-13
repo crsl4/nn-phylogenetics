@@ -12,3 +12,5 @@ His group is already exploring Bayesian networks to interpolate posterior distri
 They are also exploring variational approximations to estimate the posterior, see [here](https://matsen.fhcrc.org/general/2019/08/24/vbpi.html)
 
 But no one is trying to use neural networks!
+
+test for slack
