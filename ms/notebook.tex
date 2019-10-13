@@ -1,0 +1,234 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Neural Networks in Phylogenetic Inference},
+            pdfauthor={Claudia Solis-Lemus, Leonardo Zepeda-Nunez},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{natbib}
+\bibliographystyle{apalike}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Neural Networks in Phylogenetic Inference}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Claudia Solis-Lemus, Leonardo Zepeda-Nunez}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{}
+    \predate{}\postdate{}
+  
+\usepackage[margin=1in]{geometry}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{float}
+\newcommand{\missing}[1]{\textcolor{red}{\textbf{#1}}}
+\usepackage{graphicx}
+
+\begin{document}
+\maketitle
+
+\textbf{Background:} Phylogenetic inference consists of the estimation
+of a bifurcating tree structure to represent the evolutionary history of
+some species under study. Bayesian methods are among the most widely
+used due to their ability to integrate different data sources, and their
+natural representation of uncertainty through posterior distributions.
+However, the estimation of these posterior distributions is
+computationally heavy, because in order to estimate the posterior
+distribution, we need to traverse the high-dimensional parameter space
+with MCMC.
+
+\textbf{Idea:} We can utilize neural networks to estimate the posterior
+distributions. Instead of traversing the high-dimensional parameter
+space, we can \emph{intelligently} choose points in the parameter space,
+and then interpolate with the neural network.
+
+\hypertarget{data}{%
+\section{Data}\label{data}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(n\) species under study
+\item
+  Matrix \(D \in \{A,G,C,T\}^{n \times \ell}\) with genetic sequences of
+  length \(\ell\). Normally, many of the sites (columns) will be
+  invariant (identical across species), but we can assume that we
+  already removed invariant sites.
+\end{itemize}
+
+\hypertarget{parameters-of-interest}{%
+\section{Parameters of interest}\label{parameters-of-interest}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(T \in \mathcal{T}_n\): Bifurcating tree with \(n\) leaves.
+  \(\mathcal{T}_n\) represents the space of all bifurcating trees with
+  \(n\) leaves
+\item
+  \(Q \in \mathbf{R}^{4 \times 4}\): Transition rate matrix
+\item
+  \(t \in [0,\infty)^{2n-2}\): Vector of branch lengths
+\end{itemize}
+
+Thus, the parameter space is
+\(\theta = (T,Q,t) \in \Theta = \mathcal{T}_n \times \mathbf{R}^{4 \times 4} \times [0,\infty)^{2n-2}\).
+
+\hypertarget{model}{%
+\section{Model}\label{model}}
+
+\hypertarget{model-of-evolution}{%
+\subsection{1. Model of evolution}\label{model-of-evolution}}
+
+The model of evolution is a homogeneous continuous-time Markov model on
+4 states: \(\{A,C,G,T\}\) along the branches of the phylogenetic tree
+(see figure \ref{phylo-inf}). The model has three parameters:
+\(\theta = (T,Q,t)\).
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/phylo-inference.pdf}
+\caption{Phylogenetic likelihood depends on a continuous-time Markov model with 4 states, and 3 parameters: tree, $Q$ matrix and $t$ vector of branch lenghts}
+\label{phylo-inf}
+\end{figure}
+
+There are different types of model of evolution that can be chosen,
+depending on the assumptions we make on the \(Q\) matrix, from the
+simplest (Jukes-Cantor model) to the most complex (GTR model).
+
+Thus, as in figure \ref{phylo-inf}, the likelihood function has three
+parameters (plus the data): \(L(\theta|D)\) and it depends on the model
+of evolution chosen.
+
+\hypertarget{prior-distributions}{%
+\subsection{2. Prior distributions}\label{prior-distributions}}
+
+Each parameter \((T,Q,t)\) will have a prior distribution, representing
+the biological knowledge that we have on these parameters prior to
+estimation with data:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\pi_T(T)\): tree prior, usual choices are Yule or coalescent model
+\item
+  \(\pi_Q(Q)\): prior for \(Q\) matrix, usual choice is Dirichlet
+\item
+  \(\pi_t(t)\): prior for branch length, usual choice is Gamma
+\end{itemize}
+
+Thus, the prior of three parameters is: \[
+\pi(\theta) = \pi_T(T) \pi_Q(Q) \pi_t(t)
+\]
+
+If no information is known, uninformative priors can be selected:
+\(\pi(\theta) \propto 1\).
+
+\hypertarget{posterior-distribution}{%
+\section{Posterior distribution}\label{posterior-distribution}}
+
+The \textbf{goal} of bayesian phylogenetic inference is to estimate the
+posterior distribution of the three parameters: \[
+P(\theta | D) \propto L(\theta|D) \pi(\theta)
+\]
+
+\hypertarget{current-approach}{%
+\subsection{Current approach}\label{current-approach}}
+
+Run a MCMC in parameter space \(\Theta\) for millions of iterations, and
+use the evaluated posterior distribution on the visited states to
+estimate the function surface (like an histogram). This approach
+requires long chains to traverse the parameter space (\(\Theta\)) which
+are both inefficient and time-consuming.
+
+\hypertarget{our-proposed-idea}{%
+\subsection{Our proposed idea}\label{our-proposed-idea}}
+
+\begin{itemize}
+\tightlist
+\item
+  Randomly (or \emph{intelligently}) select points
+  \(\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K\) in the parameter space
+  \(\Theta\)
+\item
+  Evaluate the posterior distribution on this points
+  \(\{P(\theta_i|D)\}_{i=1}^K\)
+\item
+  Train a neural network with these points
+  \(\{(\theta_i, P(\theta_i|D))\}_{i=1}^K\)
+\item
+  Use neural network to interpolate the posterior distribution on
+  \(\Theta\)
+\end{itemize}
+
+\bibliography{ms.bib}
+
+
+\end{document}

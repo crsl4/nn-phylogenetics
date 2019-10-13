@@ -1,0 +1,88 @@
+--- 
+title: "Neural Networks in Phylogenetic Inference"
+author: "Claudia Solis-Lemus, Leonardo Zepeda-Nunez"
+output: 
+   pdf_document:
+     citation_package: natbib
+     keep_tex:  true
+documentclass: article
+header-includes:
+- \usepackage[margin=1in]{geometry}
+- \usepackage[ruled,vlined]{algorithm2e}
+- \usepackage[dvipsnames]{xcolor}
+- \usepackage{float}
+- \newcommand{\missing}[1]{\textcolor{red}{\textbf{#1}}}
+- \usepackage{graphicx}
+bibliography: ms.bib
+biblio-style: apalike
+link-citations: yes
+---
+
+
+**Background:** Phylogenetic inference consists of the estimation of a bifurcating tree structure to represent the evolutionary history of some species under study. Bayesian methods are among the most widely used due to their ability to integrate different data sources, and their natural representation of uncertainty through posterior distributions. However, the estimation of these posterior distributions is computationally heavy, because in order to estimate the posterior distribution, we need to traverse the high-dimensional parameter space with MCMC.
+
+
+**Idea:** We can utilize neural networks to estimate the posterior distributions. Instead of traversing the high-dimensional parameter space, we can _intelligently_ choose points in the parameter space, and then interpolate with the neural network.
+
+
+# Data
+
+- $n$ species under study
+- Matrix $D \in \{A,G,C,T\}^{n \times \ell}$ with genetic sequences of length $\ell$. Normally, many of the sites (columns) will be invariant (identical across species), but we can assume that we already removed invariant sites.
+
+# Parameters of interest
+- $T \in \mathcal{T}_n$: Bifurcating tree with $n$ leaves. $\mathcal{T}_n$ represents the space of all bifurcating trees with $n$ leaves
+- $Q \in \mathbf{R}^{4 \times 4}$: Transition rate matrix 
+- $t \in [0,\infty)^{2n-2}$: Vector of branch lengths
+
+Thus, the parameter space is $\theta = (T,Q,t) \in \Theta = \mathcal{T}_n \times \mathbf{R}^{4 \times 4} \times [0,\infty)^{2n-2}$.
+
+
+# Model
+
+## 1. Model of evolution 
+The model of evolution is a homogeneous continuous-time Markov model on 4 states: $\{A,C,G,T\}$ along the branches of the phylogenetic tree (see figure \ref{phylo-inf}). The model has three parameters: $\theta = (T,Q,t)$.
+
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/phylo-inference.pdf}
+\caption{Phylogenetic likelihood depends on a continuous-time Markov model with 4 states, and 3 parameters: tree, $Q$ matrix and $t$ vector of branch lenghts}
+\label{phylo-inf}
+\end{figure}
+
+There are different types of model of evolution that can be chosen, depending on the assumptions we make on the $Q$ matrix, from the simplest (Jukes-Cantor model) to the most complex (GTR model).
+
+Thus, as in figure \ref{phylo-inf}, the likelihood function has three parameters (plus the data): $L(\theta|D)$ and it depends on the model of evolution chosen.
+
+## 2. Prior distributions
+
+Each parameter $(T,Q,t)$ will have a prior distribution, representing the biological knowledge that we have on these parameters prior to estimation with data: 
+
+- $\pi_T(T)$: tree prior, usual choices are Yule or coalescent model
+- $\pi_Q(Q)$: prior for $Q$ matrix, usual choice is Dirichlet
+- $\pi_t(t)$: prior for branch length, usual choice is Gamma
+
+Thus, the prior of three parameters is:
+$$
+\pi(\theta) = \pi_T(T) \pi_Q(Q) \pi_t(t)
+$$
+
+If no information is known, uninformative priors can be selected: $\pi(\theta) \propto 1$.
+
+# Posterior distribution
+
+The **goal** of bayesian phylogenetic inference is to estimate the posterior distribution of the three parameters:
+$$
+P(\theta | D) \propto L(\theta|D) \pi(\theta)
+$$
+
+## Current approach
+Run a MCMC in parameter space $\Theta$ for millions of iterations, and use the evaluated posterior distribution on the visited states to estimate the function surface (like an histogram).
+This approach requires long chains to traverse the parameter space ($\Theta$) which are both inefficient and time-consuming.
+
+## Our proposed idea
+- Randomly (or _intelligently_) select points $\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K$ in the parameter space $\Theta$
+- Evaluate the posterior distribution on this points $\{P(\theta_i|D)\}_{i=1}^K$
+- Train a neural network with these points $\{(\theta_i, P(\theta_i|D))\}_{i=1}^K$
+- Use neural network to interpolate the posterior distribution on $\Theta$
