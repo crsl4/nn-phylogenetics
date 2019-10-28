@@ -90,6 +90,7 @@
 \usepackage{float}
 \newcommand{\missing}[1]{\textcolor{red}{\textbf{#1}}}
 \usepackage{graphicx}
+\DeclareMathOperator{\argmax}{argmax}
 
 \begin{document}
 \maketitle
@@ -118,9 +119,7 @@ and then interpolate with the neural network.
   \(n\) species under study
 \item
   Matrix \(D \in \{A,G,C,T\}^{n \times \ell}\) with genetic sequences of
-  length \(\ell\). Normally, many of the sites (columns) will be
-  invariant (identical across species), but we can assume that we
-  already removed invariant sites.
+  length \(\ell\).
 \end{itemize}
 
 \hypertarget{parameters-of-interest}{%
@@ -196,8 +195,8 @@ If no information is known, uninformative priors can be selected:
 
 The \textbf{goal} of bayesian phylogenetic inference is to estimate the
 posterior distribution of the three parameters: \[
-P(\theta | D) \propto L(\theta|D) \pi(\theta)
-\]
+P(\theta | D) = C_D L(\theta|D) \pi(\theta)
+\] where \(C_D\) is the unknown normalizing constant.
 
 \hypertarget{current-approach}{%
 \subsection{Current approach}\label{current-approach}}
@@ -227,6 +226,76 @@ are both inefficient and time-consuming.
   Use neural network to interpolate the posterior distribution on
   \(\Theta\)
 \end{itemize}
+
+\hypertarget{why-neural-networks}{%
+\section{Why neural networks?}\label{why-neural-networks}}
+
+Given that the evaluation of the posterior distribution is relatively
+straight-forward, people might wonder why use neural networks as opposed
+to simple evaluation. The real challenge is the identification of the
+peaks in the posterior distribution surface. Simulating points
+\(\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K\) in parameter space and
+evaluating the posterior distribution is straight-forward, but the
+simulation step will most likely yield points with low posterior
+probability values. Furthermore, the normalizing constant \(C_D\) is not
+known, and it has to be estimated from the sample of simulated points:
+\[
+\widehat{C_D}^{-1} = \sum_{i=1}^K P(\theta_i|D)
+\] Thus, depending on the simulated sample of points, the posterior
+distribution could be biased due to \(\widehat{C_D}\). Currently, people
+use an MCMC sample to estimate \(C_D\) and thus, get unbiased estimates
+of the posterior distribution, but perhaps neural networks can be used
+in an adaptive manner to identify the peaks of the surface and be able
+to estimate \(C_D\) (and the posterior distribution) without bias and
+without traversing the whole space.
+
+\hypertarget{subproblem-neural-networks-vs-optimization}{%
+\subsection{Subproblem: neural networks vs
+optimization}\label{subproblem-neural-networks-vs-optimization}}
+
+Maximum likelihood estimation aims to find the parameters
+\(\theta^* = (T^*,Q^*,t^*)\) that maximize the likelihood
+\(L(\theta|D)\). Given that the tree \(T\) is a parameter in a
+non-euclidian space, optimization usually involves sequential steps of
+heuristic search in the spaces of trees and numerical optimization of
+\((Q,t)\) for a given tree \(T\). That is, for a given proposed tree
+\(T\), we perform the following optimization: \[
+(Q^*_T,t^*_T) = \argmax_{(Q,t)} L(T,Q,t|D).
+\] The likelihood of the tree is then given by
+\(L(T|D) = L(T,Q^*_T,t^*_T|D)\). The space of trees is then traversed
+with a sequence of trees \(\{T_i\}_{i=1}^K\) with respective likelihood
+values \(\{L(T_i|D)\}_{i=1}^K\) (obtained from the above optmization).
+Overall optimization stops after certain measures of convergence, and
+identifies the maximum likelihood tree: \[
+T^* = \argmax_T L(T|D).
+\] Our \textbf{idea} is to train a neural network to estimate \(L(T|D)\)
+without the optimization step \(\max_{(Q,t)} L(T,Q,t|D)\), and thus
+saving computation time.
+
+\hypertarget{procedure}{%
+\subsubsection{Procedure}\label{procedure}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Randomly sample points \(\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K\) in the
+  parameter space \(\Theta\)
+\item
+  For every \(T_i\), optimize \(\max_{(Q,t)} L(T_i,Q,t|D)\) to obtain
+  \(L(T_i|D) = L(T_i,Q^*_{T_i},t^*_{T_i}|D)\)
+\item
+  Train a neural network with these points
+  \(\{(T_i, L(T_i|D))\}_{i=1}^K\)
+\item
+  Search tree space to identify the maximum likelihood tree by using the
+  trained neural network to compute \(L(T|D)\) instead of an
+  optimization step
+\end{enumerate}
+
+We will need to compare the speed of our approach to the standard
+maximum likelihood: RAxML or ExaML, click
+\href{https://cme.h-its.org/exelixis/software.html}{here}.
 
 \bibliography{ms.bib}
 

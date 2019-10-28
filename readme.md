@@ -13,4 +13,7 @@ They are also exploring variational approximations to estimate the posterior, se
 
 But no one is trying to use neural networks!
 
-test for slack
+## Subproblem
+
+Using neural network to improve computation speed on maximum likelihood inference by using a trained NN instead of numerical optimization of likelihood for a given tree (see `notebook.Rmd`).
+This seems to be a standalone paper to show prospect.
