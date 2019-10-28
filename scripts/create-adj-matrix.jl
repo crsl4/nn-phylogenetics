@@ -4,7 +4,7 @@
 ## -- List of adjacency matrices
 ## Claudia October 2019
 
-using PhyloNetworks, DelimitedFiles
+using PhyloNetworks, HDF5, DataFrames ##, DelimitedFiles
 include("functions.jl")
 
 t1 = readMultiTopology("../data/after---0-249.treeBL")
@@ -21,6 +21,13 @@ end
 
 ## Reshaping matrices into vector: 1000X100
 dat = hcat(reshape.(mvec,:)...)'
-outfile = "../data/adj-matrices.txt"
-writedlm(outfile,dat,',')
+dat = dat[1:end,1:end]
+
+h5open("../data/adj-matrices.h5","w") do file
+    @write file dat
+end
+
+## Not used anymore: saved as txt file
+##outfile = "../data/adj-matrices.txt"
+##writedlm(outfile,dat,',')
 

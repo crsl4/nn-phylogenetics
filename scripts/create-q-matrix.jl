@@ -4,7 +4,7 @@
 ## -- List of adjacency matrices
 ## Claudia October 2019
 
-using PhyloNetworks, CSV, DataFrames, LinearAlgebra, DelimitedFiles
+using PhyloNetworks, CSV, DataFrames, LinearAlgebra, HDF5 ##, DelimitedFiles
 include("functions.jl")
 
 dat1 = CSV.read("../data/after---0-249.out", delim=' ',ignorerepeated=true)
@@ -23,9 +23,25 @@ end
 
 ## Reshaping matrices into vector: 1000X16
 dat = hcat(reshape.(mvec,:)...)'
-outfile = "../data/q-matrices.txt"
-writedlm(outfile,dat,',')
+dat = dat[1:end,1:end]
+
+h5open("../data/q-matrices.h5","w") do file
+    @write file dat
+end
+
+
+
+## Not used anymore: saved as txt file
+##outfile = "../data/q-matrices.txt"
+##writedlm(outfile,dat,',')
 
 ## Saving loglik too:
-outfile = "../data/loglik-vector.txt"
-CSV.write(outfile,DataFrame(loglik=allt[:logl]), writeheader=false)
+outfile = "../data/loglik-vector.h5"
+loglik=allt[:logl]
+
+h5open(outfile,"w") do file
+    @write file loglik
+end
+
+##outfile = "../data/loglik-vector.txt"
+##CSV.write(outfile,DataFrame(loglik=allt[:logl]), writeheader=false)
