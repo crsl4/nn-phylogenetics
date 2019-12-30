@@ -7,6 +7,7 @@
 - Enabling Discovery through Genomic Tools (EDGE), see [here](https://www.nsf.gov/pubs/2019/nsf19527/nsf19527.htm#prep). Solicitation changed [here](https://www.nsf.gov/pubs/2020/nsf20532/nsf20532.htm), so now it does not match anymore.
 **Deadline Second Tuesday in February 2020**
 - Computational and Data-Enabled Science and Engineering, [standard program](https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=504813&org=CISE&sel_org=CISE&from=fund), [stat oriented](https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=504687&org=CISE&sel_org=CISE&from=fund). **Deadline Sept 1-15 2020**
+- Division of Environmental Biology (Core Programs) (DEB) [here](https://www.nsf.gov/pubs/2020/nsf20502/nsf20502.htm) **accepted anytime**
 
 
 # EDGE Parts of proposal
