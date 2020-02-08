@@ -19,6 +19,7 @@ biblio-style: apalike
 link-citations: yes
 ---
 
+# Initial idea: use neural network to approximate posterior distribution of phylogenetic tree
 
 **Background:** Phylogenetic inference consists of the estimation of a bifurcating tree structure to represent the evolutionary history of some species under study. Bayesian methods are among the most widely used due to their ability to integrate different data sources, and their natural representation of uncertainty through posterior distributions. However, the estimation of these posterior distributions is computationally heavy, because in order to estimate the posterior distribution, we need to traverse the high-dimensional parameter space with MCMC.
 
@@ -26,12 +27,12 @@ link-citations: yes
 **Idea:** We can utilize neural networks to estimate the posterior distributions. Instead of traversing the high-dimensional parameter space, we can _intelligently_ choose points in the parameter space, and then interpolate with the neural network.
 
 
-# Data
+## Data
 
 - $n$ species under study
 - Matrix $D \in \{A,G,C,T\}^{n \times \ell}$ with genetic sequences of length $\ell$.
 
-# Parameters of interest
+## Parameters of interest
 - $T \in \mathcal{T}_n$: Bifurcating tree with $n$ leaves. $\mathcal{T}_n$ represents the space of all bifurcating trees with $n$ leaves
 - $Q \in \mathbf{R}^{4 \times 4}$: Transition rate matrix 
 - $t \in [0,\infty)^{2n-2}$: Vector of branch lengths
@@ -39,9 +40,9 @@ link-citations: yes
 Thus, the parameter space is $\theta = (T,Q,t) \in \Theta = \mathcal{T}_n \times \mathbf{R}^{4 \times 4} \times [0,\infty)^{2n-2}$.
 
 
-# Model
+## Model
 
-## 1. Model of evolution 
+### 1. Model of evolution 
 The model of evolution is a homogeneous continuous-time Markov model on 4 states: $\{A,C,G,T\}$ along the branches of the phylogenetic tree (see figure \ref{phylo-inf}). The model has three parameters: $\theta = (T,Q,t)$.
 
 
@@ -56,7 +57,7 @@ There are different types of model of evolution that can be chosen, depending on
 
 Thus, as in figure \ref{phylo-inf}, the likelihood function has three parameters (plus the data): $L(\theta|D)$ and it depends on the model of evolution chosen.
 
-## 2. Prior distributions
+### 2. Prior distributions
 
 Each parameter $(T,Q,t)$ will have a prior distribution, representing the biological knowledge that we have on these parameters prior to estimation with data: 
 
@@ -71,7 +72,7 @@ $$
 
 If no information is known, uninformative priors can be selected: $\pi(\theta) \propto 1$.
 
-# Posterior distribution
+## Posterior distribution
 
 The **goal** of bayesian phylogenetic inference is to estimate the posterior distribution of the three parameters:
 $$
@@ -79,18 +80,18 @@ P(\theta | D) = C_D L(\theta|D) \pi(\theta)
 $$
 where $C_D$ is the unknown normalizing constant.
 
-## Current approach
+### Current approach
 Run a MCMC in parameter space $\Theta$ for millions of iterations, and use the evaluated posterior distribution on the visited states to estimate the function surface (like an histogram).
 This approach requires long chains to traverse the parameter space ($\Theta$) which are both inefficient and time-consuming.
 
-## Our proposed idea
+### Our proposed idea
 - Randomly (or _intelligently_) select points $\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K$ in the parameter space $\Theta$
 - Evaluate the posterior distribution on this points $\{P(\theta_i|D)\}_{i=1}^K$
 - Train a neural network with these points $\{(\theta_i, P(\theta_i|D))\}_{i=1}^K$
 - Use neural network to interpolate the posterior distribution on $\Theta$
 
 
-# Why neural networks?
+## Why neural networks?
 
 Given that the evaluation of the posterior distribution is relatively straight-forward, people might wonder why use neural networks as opposed to simple evaluation. The real challenge is the identification of the peaks in the posterior distribution surface.
 Simulating points $\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K$ in parameter space and evaluating the posterior distribution is straight-forward, but the simulation step will most likely yield points with low posterior probability values.
@@ -102,7 +103,7 @@ Thus, depending on the simulated sample of points, the posterior distribution co
 Currently, people use an MCMC sample to estimate $C_D$ and thus, get unbiased estimates of the posterior distribution, but perhaps neural networks can be used in an adaptive manner to identify the peaks of the surface and be able to estimate $C_D$ (and the posterior distribution) without bias and without traversing the whole space.
 
 
-## Subproblem: neural networks vs optimization
+### Subproblem: neural networks vs optimization
 
 Maximum likelihood estimation aims to find the parameters $\theta^* = (T^*,Q^*,t^*)$ that maximize the likelihood $L(\theta|D)$. Given that the tree $T$ is a parameter in a non-euclidian space, optimization usually involves sequential steps of heuristic search in the spaces of trees and numerical optimization of $(Q,t)$ for a given tree $T$. That is, for a given proposed tree $T$, we perform the following optimization:
 $$
@@ -114,7 +115,7 @@ T^* = \argmax_T L(T|D).
 $$
 Our **idea** is to train a neural network to estimate $L(T|D)$ without the optimization step $\max_{(Q,t)} L(T,Q,t|D)$, and thus saving computation time.
 
-### Procedure
+#### Procedure
 
 1. Randomly sample points $\{\theta_i = (T_i,Q_i,t_i)\}_{i=1}^K$ in the parameter space $\Theta$
 2. For every $T_i$, optimize $\max_{(Q,t)} L(T_i,Q,t|D)$ to obtain $L(T_i|D) = L(T_i,Q^*_{T_i},t^*_{T_i}|D)$
@@ -122,6 +123,21 @@ Our **idea** is to train a neural network to estimate $L(T|D)$ without the optim
 4. Search tree space to identify the maximum likelihood tree by using the trained neural network to compute $L(T|D)$ instead of an optimization step
 
 We will need to compare the speed of our approach to the standard maximum likelihood: RAxML or ExaML, click [here](https://cme.h-its.org/exelixis/software.html).
+
+\pagebreak
+
+# Second idea: based on Zou2019, use NN to classify sequences based on quartet species tree they come from
+
+Parameters:
+- $L$: sequence length
+- $S_t$: quartet species tree with branch length $t$
+- $m$: number of quartet gene trees to simulate (this translates into sample size in training data)
+
+## Procedure
+
+1. Under $S_t$, simulate $m$ quartet gene trees with the coalescent model
+2. For each quartet gene tree, simulate sequences of length $L$ under the continuous-time markov chain model
+3. Use the $m$ sets of sequences with corresponding "label" (quartet species tree where they came from) to train a neural network model
 
 
 
