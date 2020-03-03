@@ -15,7 +15,7 @@ model = 3 ##for control file PAML
 modeldatfile = "dayhoff.dat"
 blL = 0.02 ##lower bound unif for BL
 blU = 1.02 ##upper bound unif for BL
-nrep = 100,000
+nrep = 5000
 
 Random.seed!(rseed)
 seeds = sample(1:5555555555,nrep)

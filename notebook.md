@@ -170,3 +170,69 @@ For rep i=1,...nrep:
 
 I created the folder `simulations-zou2019` to put all simulated data there. Copied inside the executable (`evolver`) and the model dat file.
 Julia script file: `simulate-zou2019.jl` and `functions-zou2019.jl`
+
+### Simulations on batches:
+
+#### 20,000 replicates on 4 threads (5000 each):
+Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=5000 (I tried 25000 but the computer crashed twice). Process started 3/2 7:49pm, finished at 10:52pm.
+- Each replicate produces a label (tree) and input matrix 80xL
+- For nrep replicates, we get two files:
+  - `labels.h5` with a vector of dimension nrep
+  - `matrices.h5` with a matrix 80*nrep by L, that has all matrices stacked
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/
+
+## First thread:
+cd simulations-zou2019
+tar -czvf simulations-zou2019-1.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-1.h5
+mv matrices.h5 matrices-1.h5
+cp simulate-zou2019.jl simulate-zou2019-1.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations-zou2019-results
+mv *.tar* ../simulations-zou2019-results
+mv simulate-zou2019-1.jl ../simulations/simulations-zou2019-results
+
+## Second thread
+cd simulations-zou2019-2
+tar -czvf simulations-zou2019-2.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-2.h5
+mv matrices.h5 matrices-2.h5
+cp simulate-zou2019.jl simulate-zou2019-2.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations-zou2019-results
+mv *.tar* ../simulations-zou2019-results
+mv simulate-zou2019-2.jl ../simulations/simulations-zou2019-results
+
+## Third thread
+cd simulations-zou2019-3
+tar -czvf simulations-zou2019-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-3.h5
+mv matrices.h5 matrices-3.h5
+cp simulate-zou2019.jl simulate-zou2019-3.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations-zou2019-results
+mv *.tar* ../simulations-zou2019-results
+mv simulate-zou2019-3.jl ../simulations/simulations-zou2019-results
+
+## Fourth thread
+cd simulations-zou2019-4
+tar -czvf simulations-zou2019-4.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-4.h5
+mv matrices.h5 matrices-4.h5
+cp simulate-zou2019.jl simulate-zou2019-4.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations-zou2019-results
+mv *.tar* ../simulations-zou2019-results
+mv simulate-zou2019-4.jl ../simulations/simulations-zou2019-results
+```
+
+#### 80,000 replicates on 10 cores
+Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=8000.
+Process started 3/3 3:31pm, finished at 

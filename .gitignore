@@ -1,5 +1,6 @@
 ## For this project
 data
+simulations
 
 # Compiled source #
 ###################
@@ -119,4 +120,6 @@ Backup[ ]of[ ]*.numbers/
 *.aln
 *.fna
 *.faa
+*.dat
+*.paml
 
