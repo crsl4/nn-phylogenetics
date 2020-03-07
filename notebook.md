@@ -192,8 +192,8 @@ mv labels.h5 labels-1.h5
 mv matrices.h5 matrices-1.h5
 cp simulate-zou2019.jl simulate-zou2019-1.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations-zou2019-results
-mv *.tar* ../simulations-zou2019-results
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
 mv simulate-zou2019-1.jl ../simulations/simulations-zou2019-results
 
 ## Second thread
@@ -204,8 +204,8 @@ mv labels.h5 labels-2.h5
 mv matrices.h5 matrices-2.h5
 cp simulate-zou2019.jl simulate-zou2019-2.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations-zou2019-results
-mv *.tar* ../simulations-zou2019-results
+mv *.h5 ../simulations/simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations/simulations-zou2019-results
 mv simulate-zou2019-2.jl ../simulations/simulations-zou2019-results
 
 ## Third thread
@@ -216,8 +216,8 @@ mv labels.h5 labels-3.h5
 mv matrices.h5 matrices-3.h5
 cp simulate-zou2019.jl simulate-zou2019-3.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations-zou2019-results
-mv *.tar* ../simulations-zou2019-results
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
 mv simulate-zou2019-3.jl ../simulations/simulations-zou2019-results
 
 ## Fourth thread
@@ -228,11 +228,197 @@ mv labels.h5 labels-4.h5
 mv matrices.h5 matrices-4.h5
 cp simulate-zou2019.jl simulate-zou2019-4.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations-zou2019-results
-mv *.tar* ../simulations-zou2019-results
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
 mv simulate-zou2019-4.jl ../simulations/simulations-zou2019-results
 ```
 
-#### 80,000 replicates on 10 cores
+#### 80,000 replicates on 10 cores (8000 each)
 Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=8000.
-Process started 3/3 3:31pm, finished at 
+Process started 3/6 5pm, finished at 3/7 2am
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/
+
+## 5th thread:
+cd simulations-zou2019-5
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-5.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-5.h5
+mv matrices.h5 matrices-5.h5
+cp simulate-zou2019.jl simulate-zou2019-5.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-5.jl ../simulations/simulations-zou2019-results
+
+## 6th thread:
+cd simulations-zou2019-6
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-6.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-6.h5
+mv matrices.h5 matrices-6.h5
+cp simulate-zou2019.jl simulate-zou2019-6.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-6.jl ../simulations/simulations-zou2019-results
+
+## 7th thread:
+cd simulations-zou2019-7
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-7.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-7.h5
+mv matrices.h5 matrices-7.h5
+cp simulate-zou2019.jl simulate-zou2019-7.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-7.jl ../simulations/simulations-zou2019-results
+
+## 8th thread:
+cd simulations-zou2019-8
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-8.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-8.h5
+mv matrices.h5 matrices-8.h5
+cp simulate-zou2019.jl simulate-zou2019-8.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-8.jl ../simulations/simulations-zou2019-results
+
+
+## 9th thread:
+cd simulations-zou2019-9
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-9.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-9.h5
+mv matrices.h5 matrices-9.h5
+cp simulate-zou2019.jl simulate-zou2019-9.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-9.jl ../simulations/simulations-zou2019-results
+
+## 10th thread:
+cd simulations-zou2019-10
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-10.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-10.h5
+mv matrices.h5 matrices-10.h5
+cp simulate-zou2019.jl simulate-zou2019-10.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-10.jl ../simulations/simulations-zou2019-results
+
+## 11th thread:
+cd simulations-zou2019-11
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-11.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-11.h5
+mv matrices.h5 matrices-11.h5
+cp simulate-zou2019.jl simulate-zou2019-11.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-11.jl ../simulations/simulations-zou2019-results
+
+## 12th thread:
+cd simulations-zou2019-12
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-12.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-12.h5
+mv matrices.h5 matrices-12.h5
+cp simulate-zou2019.jl simulate-zou2019-12.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-12.jl ../simulations/simulations-zou2019-results
+
+## 13th thread:
+cd simulations-zou2019-13
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-13.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-13.h5
+mv matrices.h5 matrices-13.h5
+cp simulate-zou2019.jl simulate-zou2019-13.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-13.jl ../simulations/simulations-zou2019-results
+
+## 14th thread:
+cd simulations-zou2019-14
+mkdir tmp 
+mv rep-1* tmp
+mv rep-2* tmp
+mv rep-* tmp
+tar -czvf simulations-zou2019-14.tar.gz tmp
+rm -r tmp
+mv labels.h5 labels-14.h5
+mv matrices.h5 matrices-14.h5
+cp simulate-zou2019.jl simulate-zou2019-14.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../simulations/simulations-zou2019-results
+mv *.tar* ../simulations/simulations-zou2019-results
+mv simulate-zou2019-14.jl ../simulations/simulations-zou2019-results
+```
+
+We have all scripts and results in `simulations-zou2019-results`, so we will remove the folders used to run things in parallel:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/
+rm -rf simulations-zou2019-*
+```
+
+Then, in `simulations-zou2019`, there are two folders:
+- `scripts`: with julia scripts and needed executables
+- `results`:
+  - `labels-i.h5` (i=1,...,14): n-dimensional vector with labels for n replicates; files i=1,2,3,4 have 5000 replicates each (20,000 total) and files i=5,...,14 have 8000 replicates each (80,000 total) => 20k+80k=100k as in Zou2019
+  - `matrices-i.h5` (i=1,...,14): 80x1550 input matrix per replicate; 
+  files i=1,2,3,4 have 5000 replicates and matrices are stacked on top of each other 
+  => (80 * 5000)x1550 matrix; 
+  files i=5,...,14 have 8000 replicates each 
+  => (80 * 8000)x1550 matrix
+  - `simulate-zou2019-i.jl` (i=1,...,14): julia script with random seeds to simulate batch i
+  - `simulations-zou2019-1.tar.gz` (i=1,...,14): tar intermediate files per replicate like protein sequences, and paml control file
+
+I will put the labels and matrices files in a shared drive to share with Leo.
