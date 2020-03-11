@@ -422,3 +422,5 @@ Then, in `simulations-zou2019`, there are two folders:
   - `simulations-zou2019-1.tar.gz` (i=1,...,14): tar intermediate files per replicate like protein sequences, and paml control file
 
 I will put the labels and matrices files in a shared drive to share with Leo.
+
+Deleting the h5 files locally because they are heavy, and they are in google drive now.
