@@ -117,8 +117,10 @@ model = _Model().to(device)
 
 # specify loss function
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+# TODO: add scheduler here!! 
 
-n_epochs = 1
+
+n_epochs = 300
 
 for epoch in range(1, n_epochs+1):
     # monitor training loss
@@ -129,7 +131,7 @@ for epoch in range(1, n_epochs+1):
     ###################
     for genes, quartets_batch in dataloader:
     	#send to the device (either cpu or gpu)
-        genes, quartets_batch = gehes.to(device), quartets_batch.to(device)
+        genes, quartets_batch = genes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
         # forward pass: compute predicted outputs by passing inputs to the model
