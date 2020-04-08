@@ -5,6 +5,8 @@ import h5py
 import torch.nn as nn
 from torch.utils import data
 
+# number of available gpu
+ngpu = 1 
 batch_size = 32
 
 dataRoot = "../../data"
