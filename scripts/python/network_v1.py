@@ -113,12 +113,12 @@ class _Model(torch.nn.Module):
 criterion = torch.nn.CrossEntropyLoss()
 
 # define the model 
-model = _Model()
+model = _Model().to(device)
 
 # specify loss function
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-n_epochs = 100
+n_epochs = 1
 
 for epoch in range(1, n_epochs+1):
     # monitor training loss
@@ -127,9 +127,9 @@ for epoch in range(1, n_epochs+1):
     ###################
     # train the model #
     ###################
-    for data in dataloader:
-        # _ stands in for labels, here
-        genes, quartets_batch = data
+    for genes, quartets_batch in dataloader:
+    	#send to the device (either cpu or gpu)
+        genes, quartets_batch = gehes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
         # forward pass: compute predicted outputs by passing inputs to the model
