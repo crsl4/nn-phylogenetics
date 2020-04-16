@@ -424,3 +424,8 @@ Then, in `simulations-zou2019`, there are two folders:
 I will put the labels and matrices files in a shared drive to share with Leo.
 
 Deleting the h5 files locally because they are heavy, and they are in google drive now.
+
+## Using Zou2019 script to simulate trees n=5 (quintets)
+
+Created file `simulate-zou2019-n5.jl` with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
+Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 

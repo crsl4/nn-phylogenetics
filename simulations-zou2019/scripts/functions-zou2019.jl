@@ -130,3 +130,83 @@ function convert2onehot(name::String, L::Integer)
     mat = mat[:,2:end]
     return mat
 end
+
+
+
+### simulate a quintet with branch lengths uniformly dist
+### U(l,u)
+## ss: seed
+### Rooted chosen randomly
+## Note that we do not simulate the tree with coalescent (as rcoal)
+## to make it easier to keep the "index" of the tree
+function sampleRootedMetricQuintet(l::Number,u::Number, ss::Integer)
+    Random.seed!(ss)
+    perm = validPermutations()
+    quintet = readTopology("(((t1,t2),(t3,t4)),t5);")
+    ind = sample(1:length(perm),1)[1]
+    renameTips!(quintet, string.(perm[ind]))
+    ## choose root randomly (or leave as is=balanced tree)
+    r = rand(Uniform(0,1),1)[1]
+    if(r<0.2)
+        rootatnode!(quartet,"1")
+    elseif(r<0.4)
+        rootatnode!(quartet,"2")
+    elseif(r<0.6)
+        rootatnode!(quartet,"3")
+    elseif(r<0.8)
+        rootatnode!(quartet,"4")
+    end
+    ## setting branch lenghts
+    for e in quintet.edge
+        setLength!(e,rand(Uniform(l,u),1)[1])
+    end
+    return writeTopology(quintet),ind
+end
+
+
+
+## rename one tip in HybridNetworks object
+function renameTip!(net::HybridNetwork, oldtip::String, newtip::String)
+    ind = findall([n.name for n in net.node] .== oldtip)
+    length(ind) > 0 || error("$oldtip not found in network")
+    length(ind) < 2 || error("$oldtip found in multiple leaves in network")
+    net.node[ind[1]].name = newtip
+end
+
+
+## rename tips in HybridNetworks object
+## oldtip: vector with old tips to change in the order of newtip vector
+function renameTips!(net::HybridNetwork, oldtip::Vector{String}, newtip::Vector{String})
+    for i in 1:length(oldtip)
+        renameTip!(net, oldtip[i], newtip[i])
+    end
+end
+
+
+## rename tips in HybridNetworks object
+## in this version, you do not give the vector of old names
+## you simply change the tip names in the order that the names appear in net
+renameTips!(net::HybridNetwork, newtip::Vector{String}) = renameTips!(net, net.names, newtip)
+
+
+## manually created list of valid permutations
+## this only works for quintets
+function validPermutations()
+    perm = [
+    [1,2,3,4,5],
+[1,2,3,5,4],
+[1,2,4,5,3],
+[1,3,2,4,5],
+[1,3,2,5,4],
+[1,3,4,5,2],
+[1,4,2,3,5],
+[1,4,2,5,3],
+[1,4,3,5,2],
+[1,5,2,3,4],
+[1,5,2,4,3],
+[1,5,3,4,2],
+[2,3,4,5,1],
+[2,4,3,5,1],
+        [2,5,3,4,1]]
+    return perm
+end
