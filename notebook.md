@@ -429,3 +429,115 @@ Deleting the h5 files locally because they are heavy, and they are in google dri
 
 Created file `simulate-zou2019-n5.jl` with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
 Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
+
+# Understanding Zou2019 permutations
+From the main text:
+- We generated random trees with more than four taxa and simulated amino acid sequences of varying lengths according to the trees
+- After the generation of each tree and associated sequence data, we pruned the tree so that only four taxa remain, hence creating a quartet tree sample ready for training, validation, or testing of the residual network predictor. 
+- To ensure that the training process involved diverse and challenging learning materials, we pruned a proportion of trees to four randomly chosen taxa (normal trees), and the other trees to four taxa with high LBA susceptibility
+- Training consisted of multiple iterative epochs, based on a total training pool of 100,000 quartets containing 85% normal trees and 15% LBA trees **note:** 100,000 quartets, each with different (24) permutations as explained below
+
+From the "Materials and Methods" section:
+- The raw input data, as in conventional phylogenetic inference software, are four aligned amino acid sequences of length L (denoted as taxon0, taxon1, taxon2, and taxon3, hence dimension 4 x L). This is then one-hot-encoded, expanding each amino acid position into a dimension with twenty 0/1 codes indicating which amino acid is in this position. The 4 x 20 x L tensor is transformed to an 80 x L matrix and fed into the residual network
+- The output of the network includes three numbers representing the likelihood that taxon0 is a sister of taxon1, taxon2, and taxon3, respectively
+- During the training process, the four taxa in each quartet data set were permutated to create 4!=24 different orders, and each serves as an independent training sample, to ensure that the order of taxa in the data set does not influence the phylogenetic inference
+- Sequences on a tree were simulated from more ancient to more recent nodes, starting at the root. 
+
+Process:
+1. Simulate large tree, then prune to quartet
+2. Simulate sequences on quartet
+3. Permutate all 4 taxa in the quartet to get 24 permutations for that quartet
+
+
+In [data.py](https://gitlab.com/ztzou/phydl/-/blob/master/evosimz/data.py) has the function shuffle on line 225. We want to understand why (if?) all 24 permutations make sense for a given tree:
+```python
+class _QuartetMixin:
+    ## this gives us the list of all 24 permutations (see code below)
+    _ORDERS = numpy.asarray(list(itertools.permutations(range(4))))
+
+def _shuffle(cls, tree, random_order=False):
+        ## here we create a vector of size 24 with repeated tree
+        ## note that cls._ORDERS.shape=(24,4)
+        trees = [tree] * cls._ORDERS.shape[0] 
+        leaves = tree.get_leaves()
+        if random_order:
+            random.shuffle(leaves)
+        ## leaf.sequence is an array of length L, leaves are 4:(tx0,tx1,tx2,tx3)
+        sequences = numpy.asarray([leaf.sequence for leaf in leaves])
+        ## to understand view('S1') see below
+        sequences = sequences.view('S1').reshape(len(leaves), -1)
+        sequences = sequences[cls._ORDERS, :]
+        leaf_list = [[leaves[i] for i in order] for order in cls._ORDERS]
+        # print(len(trees), sequences.shape, cls._ORDERS.shape, len(leaf_list), sep='\n')
+        # 24, (24, 4, 869), (24, 4), 24
+        return trees, sequences, cls._ORDERS, leaf_list
+```
+
+Trying to understand the commands in python:
+```python
+$ python
+Python 2.7.16 (default, Oct 16 2019, 00:34:56) 
+[GCC 4.2.1 Compatible Apple LLVM 10.0.1 (clang-1001.0.37.14)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import bisect
+>>> import itertools
+>>> import pickle
+>>> import random
+>>> import numpy
+>>> numpy.asarray(list(itertools.permutations(range(4))))
+array([[0, 1, 2, 3],
+       [0, 1, 3, 2],
+       [0, 2, 1, 3],
+       [0, 2, 3, 1],
+       [0, 3, 1, 2],
+       [0, 3, 2, 1],
+       [1, 0, 2, 3],
+       [1, 0, 3, 2],
+       [1, 2, 0, 3],
+       [1, 2, 3, 0],
+       [1, 3, 0, 2],
+       [1, 3, 2, 0],
+       [2, 0, 1, 3],
+       [2, 0, 3, 1],
+       [2, 1, 0, 3],
+       [2, 1, 3, 0],
+       [2, 3, 0, 1],
+       [2, 3, 1, 0],
+       [3, 0, 1, 2],
+       [3, 0, 2, 1],
+       [3, 1, 0, 2],
+       [3, 1, 2, 0],
+       [3, 2, 0, 1],
+       [3, 2, 1, 0]])
+>>> strarray = numpy.array([[b"123456"], [b"654321"]])
+>>> strarray
+array([['123456'],
+       ['654321']], 
+      dtype='|S6')
+>>> strarray.view('S1')
+array([['1', '2', '3', '4', '5', '6'],
+       ['6', '5', '4', '3', '2', '1']], 
+      dtype='|S1')
+>>> strarray.view('S1').reshape(2,-1)
+array([['1', '2', '3', '4', '5', '6'],
+       ['6', '5', '4', '3', '2', '1']], 
+      dtype='|S1')
+>>> strarray.view('S1').reshape(3,-1)
+array([['1', '2', '3', '4'],
+       ['5', '6', '6', '5'],
+       ['4', '3', '2', '1']], 
+      dtype='|S1')
+>>> strarray[0]
+array(['123456'], 
+      dtype='|S6')
+>>> strarray[[0,1]]
+array([['123456'],
+       ['654321']], 
+      dtype='|S6')
+>>> strarray[[1,0]]
+array([['654321'],
+       ['123456']], 
+      dtype='|S6')
+```
+
+Conclusion after talking to Erin: A student in her group presented this paper in lab meeting. He has been trying to use the trained network on a dataset (and failing miserably). It seems that the permutations are on the rows of the matrix only, not on the labels. So all our discussion on symmetries is totally new and something we can exploit (yay!). If you have a matrix 4xL with the sequences, they permute the rows (all 24 permutations), but they keep the labels. This is only to prevent the row order from mattering
