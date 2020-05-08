@@ -595,3 +595,108 @@ After `shuffle`, they call the function `_generate_class_label`, which for every
 That is, the quartet 1 is 01|23. [0, 1, 2, 3] corresponds to this same quartet, so as [1, 0, 2, 3], but this one is not: [3, 1, 2, 0], this corresponds to 02|13.
 
 Now, we want to do the map of permutation to quartet class for us.
+
+- Quartet 12|34 => Indices: 1->0, 2->1, 3->2, 4->3
+[0, 1, 2, 3] => 12|34 If we add up the first 2 entries and the last 2 entries: 1,5
+[0, 1, 3, 2] => 12|34: 1,5
+[0, 2, 1, 3] => 13|24: 2,4
+[0, 2, 3, 1] => 13|24: 2,4
+[0, 3, 1, 2] => 14|23: 3,3
+[0, 3, 2, 1] => 14|23
+[1, 0, 2, 3] => 12|34
+[1, 0, 3, 2] => 12|34
+[1, 2, 0, 3] => 14|23
+[1, 2, 3, 0] => 14|23
+[1, 3, 0, 2] => 13|24
+[1, 3, 2, 0] => 13|24
+[2, 0, 1, 3] => 13|24
+[2, 0, 3, 1] => 13|24
+[2, 1, 0, 3] => 14|23
+[2, 1, 3, 0] => 14|23
+[2, 3, 0, 1] => 12|34
+[2, 3, 1, 0] => 12|34
+[3, 0, 1, 2] => 14|23
+[3, 0, 2, 1] => 14|23
+[3, 1, 0, 2] => 13|24
+[3, 1, 2, 0] => 13|24
+[3, 2, 0, 1] => 12|34
+[3, 2, 1, 0] => 12|34
+
+So, for the quartet 1 (12|34), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
+- p1+p2=1, p3+p4=5 (or viceversa): quartet 1 (12|34)
+- p1+p2=2, p3+p4=4 (or viceversa): quartet 2 (13|24)
+- p1+p2=3, p3+p4=3 (or viceversa): quartet 3 (14|23)
+
+
+Now, for quartet 2 (13|24) => Indices: 1->0, 3->1, 2->2, 4->3
+[0, 1, 2, 3] => 13|24: 1,5
+[0, 1, 3, 2] => 13|24: 1,5
+[0, 2, 1, 3] => 12|34: 2,4
+[0, 2, 3, 1] => 12|34: 2,4
+[0, 3, 1, 2] => 14|23: 3,3
+[0, 3, 2, 1] => 14|23
+[1, 0, 2, 3] => 13|24
+[1, 0, 3, 2] => 13|24
+[1, 2, 0, 3] => 14|23
+[1, 2, 3, 0] => 14|23
+[1, 3, 0, 2] => 12|34
+[1, 3, 2, 0] => 12|34
+[2, 0, 1, 3] => 12|34
+[2, 0, 3, 1] => 12|34
+[2, 1, 0, 3] => 14|23
+[2, 1, 3, 0] => 14|23
+[2, 3, 0, 1] => 13|24
+[2, 3, 1, 0] => 13|24
+[3, 0, 1, 2] => 14|23
+[3, 0, 2, 1] => 14|23
+[3, 1, 0, 2] => 12|34
+[3, 1, 2, 0] => 12|34
+[3, 2, 0, 1] => 13|24
+[3, 2, 1, 0] => 13|24
+
+So, for the quartet 2 (13|24), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
+- p1+p2=1, p3+p4=5 (or viceversa): quartet 2 (13|24)
+- p1+p2=2, p3+p4=4 (or viceversa): quartet 1 (12|34)
+- p1+p2=3, p3+p4=3 (or viceversa): quartet 3 (14|23)
+
+
+Now, for quartet 3 (14|23) => Indices: 1->0, 4->1, 2->2, 3->3
+[0, 1, 2, 3] => 14|23: 1,5
+[0, 1, 3, 2] => 14|23: 1,5
+[0, 2, 1, 3] => 12|34: 2,4
+[0, 2, 3, 1] => 12|34: 2,4
+[0, 3, 1, 2] => 13|24: 3,3
+[0, 3, 2, 1] => 13|24
+[1, 0, 2, 3] => 14|23
+[1, 0, 3, 2] => 14|23
+[1, 2, 0, 3] => 13|24
+[1, 2, 3, 0] => 13|24
+[1, 3, 0, 2] => 12|34
+[1, 3, 2, 0] => 12|34
+[2, 0, 1, 3] => 12|34
+[2, 0, 3, 1] => 12|34
+[2, 1, 0, 3] => 13|24
+[2, 1, 3, 0] => 13|24
+[2, 3, 0, 1] => 14|23
+[2, 3, 1, 0] => 14|23
+[3, 0, 1, 2] => 13|24
+[3, 0, 2, 1] => 13|24
+[3, 1, 0, 2] => 12|34
+[3, 1, 2, 0] => 12|34
+[3, 2, 0, 1] => 14|23
+[3, 2, 1, 0] => 14|23
+
+So, for the quartet 3 (14|23), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
+- p1+p2=1, p3+p4=5 (or viceversa): quartet 3 (14|23)
+- p1+p2=2, p3+p4=4 (or viceversa): quartet 1 (12|34)
+- p1+p2=3, p3+p4=3 (or viceversa): quartet 2 (14|23)
+
+
+**NOTE** It will not be as straight-forward to implement this permutation strategy due to how PAML works.
+In our simulating pipeline, PAML is already permuting the rows of the sequence.
+That is, for `rep-1.dat`, PAML is simulating sequences from the tree:
+```
+(4:0.5499040314743673,(1:0.3242263809077284,(2:0.15326301295458997,3:0.4335172886379941):0.38905991077599955):0.3366654232508077);
+```
+The order of the taxa will be order read, so S1=4, S2=1, S3=2, S4=3.
+So, we might need to simulate the data again to force the order of taxa.
