@@ -467,6 +467,7 @@ def _shuffle(cls, tree, random_order=False):
         ## to understand view('S1') see below
         sequences = sequences.view('S1').reshape(len(leaves), -1)
         sequences = sequences[cls._ORDERS, :]
+        ## the following command change the order of the leaves to match the permutations:
         leaf_list = [[leaves[i] for i in order] for order in cls._ORDERS]
         # print(len(trees), sequences.shape, cls._ORDERS.shape, len(leaf_list), sep='\n')
         # 24, (24, 4, 869), (24, 4), 24
@@ -540,4 +541,57 @@ array([['654321'],
       dtype='|S6')
 ```
 
-Conclusion after talking to Erin: A student in her group presented this paper in lab meeting. He has been trying to use the trained network on a dataset (and failing miserably). It seems that the permutations are on the rows of the matrix only, not on the labels. So all our discussion on symmetries is totally new and something we can exploit (yay!). If you have a matrix 4xL with the sequences, they permute the rows (all 24 permutations), but they keep the labels. This is only to prevent the row order from mattering
+Conclusion after talking to Erin: A student in her group presented this paper in lab meeting. He has been trying to use the trained network on a dataset (and failing miserably). It seems that the permutations are on the rows of the matrix only, not on the labels. So all our discussion on symmetries is totally new and something we can exploit (yay!). If you have a matrix 4xL with the sequences, they permute the rows (all 24 permutations), but they keep the labels. This is only to prevent the row order from mattering.
+
+
+# Notes after studying the code
+
+- The `shuffle` function takes a tree as input (one quartet), which repeats as a vector of dimension 24: `trees`
+- The function also takes the sequence simulated on this tree as input, say:
+```
+0....
+1....
+2....
+3....
+```
+- The function then creates all 4!=24 permutations of the 4 indices (`cls.ORDER`):
+```
+array([[0, 1, 2, 3],
+       [0, 1, 3, 2],
+       [0, 2, 1, 3],
+       [0, 2, 3, 1],
+       [0, 3, 1, 2],
+       [0, 3, 2, 1],
+       [1, 0, 2, 3],
+       [1, 0, 3, 2],
+       [1, 2, 0, 3],
+       [1, 2, 3, 0],
+       [1, 3, 0, 2],
+       [1, 3, 2, 0],
+       [2, 0, 1, 3],
+       [2, 0, 3, 1],
+       [2, 1, 0, 3],
+       [2, 1, 3, 0],
+       [2, 3, 0, 1],
+       [2, 3, 1, 0],
+       [3, 0, 1, 2],
+       [3, 0, 2, 1],
+       [3, 1, 0, 2],
+       [3, 1, 2, 0],
+       [3, 2, 0, 1],
+       [3, 2, 1, 0]])
+```
+- Then, they adjust the `leaf_list` to the specific order. That is, if the `leaf_list` was `(tx1,tx2,tx3,tx4)`, they will get a 24-dim vector will all the permutations on `cls.ORDER`:
+```
+array([[tx1, tx2, tx3, tx4],
+       [tx1, tx2, tx4, tx3],
+       [tx1, tx3, tx2, tx4],
+.
+.
+.
+```
+
+After `shuffle`, they call the function `_generate_class_label`, which for every 4-taxon array, change the quartet class (response label) if it was changed. This is done so that we do not need to keep the labels.
+That is, the quartet 1 is 01|23. [0, 1, 2, 3] corresponds to this same quartet, so as [1, 0, 2, 3], but this one is not: [3, 1, 2, 0], this corresponds to 02|13.
+
+Now, we want to do the map of permutation to quartet class for us.
