@@ -607,7 +607,7 @@ That is, the quartet 1 is 01|23. [0, 1, 2, 3] corresponds to this same quartet, 
 
 Now, we want to do the map of permutation to quartet class for us.
 
-#### Quartet 12|34
+#### Quartet 1 (12|34)
 Indices: 1->0, 2->1, 3->2, 4->3
 ```
 [0, 1, 2, 3] => 12|34 If we add up the first 2 entries and the last 2 entries: 1,5
