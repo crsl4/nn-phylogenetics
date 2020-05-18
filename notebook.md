@@ -184,7 +184,7 @@ Re-started on desktop 5/9 830am, finished 12pm
 
   I had to check that the sequences were simulated in the correct order in the *.dat files. The S1,S2,S3,S4 in the paml file correspond to the order in the tree in the dat file. Files look ok!
 
-**aqui voy**
+
 We summarize the files:
 ```shell
 cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
@@ -238,14 +238,17 @@ mv *.tar* ../results
 mv simulate-zou2019-4.jl ../results
 ```
 
-**aqui voy**
 #### 80,000 replicates on 10 cores (8000 each)
 Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=8000.
 Process started 3/6 5pm, finished at 3/7 2am
 
+We rerun in Mac desktop. We start only with 5-9 (to make sure we don't run out of memory).
+Process 5-9 started 5/17 1pm, finished 9:30pm
+Process 10-14 started 5/17 10pm, finished 5/18 7am
+
 We summarize the files:
 ```shell
-cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
 
 ## 5th thread:
 cd simulations-zou2019-5
@@ -257,11 +260,11 @@ tar -czvf simulations-zou2019-5.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-5.h5
 mv matrices.h5 matrices-5.h5
-cp simulate-zou2019.jl simulate-zou2019-5.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-5.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-5.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-5.jl ../results
 
 ## 6th thread:
 cd simulations-zou2019-6
@@ -273,11 +276,11 @@ tar -czvf simulations-zou2019-6.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-6.h5
 mv matrices.h5 matrices-6.h5
-cp simulate-zou2019.jl simulate-zou2019-6.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-6.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-6.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-6.jl ../results
 
 ## 7th thread:
 cd simulations-zou2019-7
@@ -289,11 +292,11 @@ tar -czvf simulations-zou2019-7.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-7.h5
 mv matrices.h5 matrices-7.h5
-cp simulate-zou2019.jl simulate-zou2019-7.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-7.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-7.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-7.jl ../results
 
 ## 8th thread:
 cd simulations-zou2019-8
@@ -305,11 +308,11 @@ tar -czvf simulations-zou2019-8.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-8.h5
 mv matrices.h5 matrices-8.h5
-cp simulate-zou2019.jl simulate-zou2019-8.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-8.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-8.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-8.jl ../results
 
 
 ## 9th thread:
@@ -322,11 +325,11 @@ tar -czvf simulations-zou2019-9.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-9.h5
 mv matrices.h5 matrices-9.h5
-cp simulate-zou2019.jl simulate-zou2019-9.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-9.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-9.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-9.jl ../results
 
 ## 10th thread:
 cd simulations-zou2019-10
@@ -338,11 +341,11 @@ tar -czvf simulations-zou2019-10.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-10.h5
 mv matrices.h5 matrices-10.h5
-cp simulate-zou2019.jl simulate-zou2019-10.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-10.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-10.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-10.jl ../results
 
 ## 11th thread:
 cd simulations-zou2019-11
@@ -354,11 +357,11 @@ tar -czvf simulations-zou2019-11.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-11.h5
 mv matrices.h5 matrices-11.h5
-cp simulate-zou2019.jl simulate-zou2019-11.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-11.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-11.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-11.jl ../results
 
 ## 12th thread:
 cd simulations-zou2019-12
@@ -370,11 +373,11 @@ tar -czvf simulations-zou2019-12.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-12.h5
 mv matrices.h5 matrices-12.h5
-cp simulate-zou2019.jl simulate-zou2019-12.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-12.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-12.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-12.jl ../results
 
 ## 13th thread:
 cd simulations-zou2019-13
@@ -386,11 +389,11 @@ tar -czvf simulations-zou2019-13.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-13.h5
 mv matrices.h5 matrices-13.h5
-cp simulate-zou2019.jl simulate-zou2019-13.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-13.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-13.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-13.jl ../results
 
 ## 14th thread:
 cd simulations-zou2019-14
@@ -402,11 +405,11 @@ tar -czvf simulations-zou2019-14.tar.gz tmp
 rm -r tmp
 mv labels.h5 labels-14.h5
 mv matrices.h5 matrices-14.h5
-cp simulate-zou2019.jl simulate-zou2019-14.jl ## to keep the script ran
+##cp simulate-zou2019.jl simulate-zou2019-14.jl ## to keep the script ran
 ## move to results folder:
-mv *.h5 ../simulations/simulations-zou2019-results
-mv *.tar* ../simulations/simulations-zou2019-results
-mv simulate-zou2019-14.jl ../simulations/simulations-zou2019-results
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-14.jl ../results
 ```
 
 We have all scripts and results in `simulations-zou2019-results`, so we will remove the folders used to run things in parallel:

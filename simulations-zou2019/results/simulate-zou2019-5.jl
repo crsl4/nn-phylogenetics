@@ -24,6 +24,7 @@ makeOdd!(seeds) ## we need odd seed for PAML
 labels = zeros(nrep)
 matrices = zeros(L)
 
+##for i in 1:convert(Int,nrep/2)
 for i in 1:nrep
     println("=====================================================")
     @show i

@@ -65,6 +65,8 @@ end
 ### U(l,u)
 ## ss: seed
 ### Rooted chosen randomly
+## the random root was removed to implement the permutation
+## strategy in Zou2019
 function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer)
     Random.seed!(ss)
     quartets = ["((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));"] ##only thinking of unrooted
@@ -72,16 +74,16 @@ function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer)
     q = quartets[ind]
     quartet = readTopology(q)
     ## choose root randomly (or leave as is=balanced tree)
-    r = rand(Uniform(0,1),1)[1]
-    if(r<0.2)
-        rootatnode!(quartet,"1")
-    elseif(r<0.4)
-        rootatnode!(quartet,"2")
-    elseif(r<0.6)
-        rootatnode!(quartet,"3")
-    elseif(r<0.8)
-        rootatnode!(quartet,"4")
-    end
+    # r = rand(Uniform(0,1),1)[1]
+    # if(r<0.2)
+    #     rootatnode!(quartet,"1")
+    # elseif(r<0.4)
+    #     rootatnode!(quartet,"2")
+    # elseif(r<0.6)
+    #     rootatnode!(quartet,"3")
+    # elseif(r<0.8)
+    #     rootatnode!(quartet,"4")
+    # end
     ## setting branch lenghts
     for e in quartet.edge
         setLength!(e,rand(Uniform(l,u),1)[1])
