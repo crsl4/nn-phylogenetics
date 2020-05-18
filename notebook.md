@@ -606,6 +606,7 @@ That is, the quartet 1 is 01|23. [0, 1, 2, 3] corresponds to this same quartet, 
 Now, we want to do the map of permutation to quartet class for us.
 
 - Quartet 12|34 => Indices: 1->0, 2->1, 3->2, 4->3
+```
 [0, 1, 2, 3] => 12|34 If we add up the first 2 entries and the last 2 entries: 1,5
 [0, 1, 3, 2] => 12|34: 1,5
 [0, 2, 1, 3] => 13|24: 2,4
@@ -630,6 +631,7 @@ Now, we want to do the map of permutation to quartet class for us.
 [3, 1, 2, 0] => 13|24
 [3, 2, 0, 1] => 12|34
 [3, 2, 1, 0] => 12|34
+```
 
 So, for the quartet 1 (12|34), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
 - p1+p2=1, p3+p4=5 (or viceversa): quartet 1 (12|34)
@@ -638,6 +640,7 @@ So, for the quartet 1 (12|34), let `p=[p1,p2,p3,p4]` be the vector of taxa indic
 
 
 Now, for quartet 2 (13|24) => Indices: 1->0, 3->1, 2->2, 4->3
+```
 [0, 1, 2, 3] => 13|24: 1,5
 [0, 1, 3, 2] => 13|24: 1,5
 [0, 2, 1, 3] => 12|34: 2,4
@@ -662,6 +665,7 @@ Now, for quartet 2 (13|24) => Indices: 1->0, 3->1, 2->2, 4->3
 [3, 1, 2, 0] => 12|34
 [3, 2, 0, 1] => 13|24
 [3, 2, 1, 0] => 13|24
+```
 
 So, for the quartet 2 (13|24), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
 - p1+p2=1, p3+p4=5 (or viceversa): quartet 2 (13|24)
@@ -670,6 +674,7 @@ So, for the quartet 2 (13|24), let `p=[p1,p2,p3,p4]` be the vector of taxa indic
 
 
 Now, for quartet 3 (14|23) => Indices: 1->0, 4->1, 2->2, 3->3
+```
 [0, 1, 2, 3] => 14|23: 1,5
 [0, 1, 3, 2] => 14|23: 1,5
 [0, 2, 1, 3] => 12|34: 2,4
@@ -694,6 +699,7 @@ Now, for quartet 3 (14|23) => Indices: 1->0, 4->1, 2->2, 3->3
 [3, 1, 2, 0] => 12|34
 [3, 2, 0, 1] => 14|23
 [3, 2, 1, 0] => 14|23
+```
 
 So, for the quartet 3 (14|23), let `p=[p1,p2,p3,p4]` be the vector of taxa indices in the permutations
 - p1+p2=1, p3+p4=5 (or viceversa): quartet 3 (14|23)
