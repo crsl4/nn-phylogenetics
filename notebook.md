@@ -603,6 +603,8 @@ array([[tx1, tx2, tx3, tx4],
 After `shuffle`, they call the function `_generate_class_label`, which for every 4-taxon array, change the quartet class (response label) if it was changed. This is done so that we do not need to keep the labels.
 That is, the quartet 1 is 01|23. [0, 1, 2, 3] corresponds to this same quartet, so as [1, 0, 2, 3], but this one is not: [3, 1, 2, 0], this corresponds to 02|13.
 
+### Permutation map
+
 Now, we want to do the map of permutation to quartet class for us.
 
 - Quartet 12|34 => Indices: 1->0, 2->1, 3->2, 4->3
@@ -639,7 +641,7 @@ So, for the quartet 1 (12|34), let `p=[p1,p2,p3,p4]` be the vector of taxa indic
 - p1+p2=3, p3+p4=3 (or viceversa): quartet 3 (14|23)
 
 
-Now, for quartet 2 (13|24) => Indices: 1->0, 3->1, 2->2, 4->3
+- Now, for quartet 2 (13|24) => Indices: 1->0, 3->1, 2->2, 4->3
 ```
 [0, 1, 2, 3] => 13|24: 1,5
 [0, 1, 3, 2] => 13|24: 1,5
@@ -673,7 +675,7 @@ So, for the quartet 2 (13|24), let `p=[p1,p2,p3,p4]` be the vector of taxa indic
 - p1+p2=3, p3+p4=3 (or viceversa): quartet 3 (14|23)
 
 
-Now, for quartet 3 (14|23) => Indices: 1->0, 4->1, 2->2, 3->3
+- Now, for quartet 3 (14|23) => Indices: 1->0, 4->1, 2->2, 3->3
 ```
 [0, 1, 2, 3] => 14|23: 1,5
 [0, 1, 3, 2] => 14|23: 1,5
