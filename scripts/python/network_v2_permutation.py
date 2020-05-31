@@ -1,5 +1,3 @@
-# network without using the permutation. 
-
 import numpy as np 
 import matplotlib.pyplot as plt
 import torch
@@ -38,6 +36,42 @@ dataloader = torch.utils.data.DataLoader(my_dataset, batch_size=batch_size,
                                          shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+
+## we use a class to storage the different permutations:
+
+class _Permutation():
+
+    def __init__():
+
+        self.permData = np.asarray(list(itertools.permutations(range(4))))
+
+        self.permTaxon1 =  torch.tensor([ 0, 0, 1, 1, 
+                                          2, 2, 0, 0, 
+                                          2, 2, 1, 1, 
+                                          1, 1, 2, 2, 
+                                          0, 0, 2, 2, 
+                                          1, 1, 0, 0 ], dtype = torch.long)
+
+        self.permTaxon1 =  torch.tensor([ 1, 1, 0, 0, 
+                                          2, 2, 1, 1, 
+                                          2, 2, 0, 0, 
+                                          0, 0, 2, 2, 
+                                          1, 1, 2, 2, 
+                                          0, 0, 1, 1 ], dtype = torch.long)
+
+        self.permTaxon1 =  torch.tensor([ 2, 2, 0, 0, 
+                                          1, 1, 2, 2, 
+                                          1, 1, 0, 0, 
+                                          0, 0, 1, 1, 
+                                          2, 2, 1, 1, 
+                                          0, 0, 2, 2 ], dtype = torch.long)
+
+    def __call__(sample, label):
+        # this is the function to perform the permutations 
+        taxa = np.reshape(sample, (-1, 4,20)) 
+
+
 
 ##############################################################
 # We specify the networks (this are quite simple, we should be
