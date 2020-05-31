@@ -1,4 +1,4 @@
-# network without using the permutation. 
+# this is the same script as before but we use more data.
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -9,53 +9,71 @@ from torch.utils import data
 
 # number of available gpu
 ngpu = 1 
-batch_size = 32
+batch_size = 128
+decayRate = 0.95
+lr = 0.001
 
 dataRoot = "../../data"
 
-labelFiles = "labels-1.h5"
-matFiles = "matrices-1.h5"
+# this is a for loop to load different files
+Mats = 0
+Labels = 0
 
-labelsh5 = h5py.File(dataRoot+"/"+labelFiles, 'r')
-labels = labelsh5['labels'][:].astype(np.int64)-1 
-# classes from 0 to C-1
+for ii in range(1,6):
+    labelFiles = "labels-{}.h5".format(str(ii))
+    matFiles = "matrices-{}.h5".format(str(ii))
 
-matsh5 = h5py.File(dataRoot+"/"+matFiles, 'r')
-mats = matsh5['matrices'][:]
+    labelsh5 = h5py.File(dataRoot+"/"+labelFiles, 'r')
+    labels = labelsh5['labels'][:].astype(np.int64)-1 
+    # classes from 0 to C-1
+    
+    matsh5 = h5py.File(dataRoot+"/"+matFiles, 'r')
+    mats = matsh5['matrices'][:]
 
-nSamples = labels.shape[0]
+    mats = mats.reshape((1550, -1, labels.shape[0]))    
+    mats = np.transpose(mats, (2, 1, 0 ))
 
-mats = mats.reshape((1550, nSamples, -1))    
-mats = np.transpose(mats, (1, 0, 2))
+    if type(Mats) == int :
+        Mats = mats
+        Labels = labels
+    else: 
+        Mats = np.concatenate([Mats, mats], axis = 0)
+        Labels = np.concatenate([Labels, labels], axis = 0)
+
+savePath = "network_test.pt"
+
+nSamples = Labels.shape[0]
+
+nTrainSamples = int(0.95*nSamples)
+nTestSamples = int(0.05*nSamples)
+
+# #random shuffle
+# idxShuffle = np.linspace(0, nSamples-1, nSamples).astype(np.int32)
+# np.random.shuffle(idxShuffle)
+
+# Labels = Labels[idxShuffle]
+# Mats   = Mats[idxShuffle,:,:]
+
 # dims of mats is (Nsamples, NChannels, Nsequence)
 
-nTrainSamples = 4500
-nTestSamples = 500
+output = torch.tensor(Labels)
+input  = torch.Tensor(Mats)
 
-outputTrain = torch.tensor(labels[0:nTrainSamples])
-inputTrain  = torch.Tensor(mats[0:nTrainSamples, :, :])
+trainDataSet = data.TensorDataset(input[:nTrainSamples, :,:], output[:nTrainSamples]) 
+testDataSet = data.TensorDataset(input[-nTestSamples:, :,:], output[-nTestSamples:]) 
 
-datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 
-outputTest = torch.tensor(labels[-nTestSamples:-1])
-inputTest  = torch.Tensor(mats[-nTestSamples:-1, :, :])
+dataloaderTrain = torch.utils.data.DataLoader(trainDataSet, batch_size=batch_size,
+                                         shuffle=True)
 
-datasetTest = data.TensorDataset(inputTest, outputTest) 
-
-dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
-                                              batch_size=batch_size,
-                                              shuffle=True)
-
-dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=100,
-                                             shuffle=True)
+dataloaderTest = torch.utils.data.DataLoader(testDataSet, batch_size=batch_size)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
 
 ##############################################################
 # We specify the networks (this are quite simple, we should be
 # able to build some more complex)
-
 
 ## copy paste from the Zou 2019 model 
 # here is the residue block
@@ -124,18 +142,24 @@ class _Model(torch.nn.Module):
 ###############################################
 
 # specify loss function
-# criterion = torch.nn.CrossEntropyLoss(reduction='sum')
-criterion = torch.nn.CrossEntropyLoss()
+criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+# criterion = torch.nn.CrossEntropyLoss()
 
 # define the model 
 model = _Model().to(device)
 
 # specify loss function
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+stepSizeEpochs = 10
+step_size = stepSizeEpochs*(nSamples//batch_size)
+exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                             step_size=stepSizeEpochs, gamma=decayRate)
 # TODO: add scheduler here!! 
 
 
-n_epochs = 300
+n_epochs = 1000
+
+print("final learning rate = {:.8f}".format((lr*np.power(decayRate, n_epochs//stepSizeEpochs))))
 
 for epoch in range(1, n_epochs+1):
     # monitor training loss
@@ -145,7 +169,7 @@ for epoch in range(1, n_epochs+1):
     # train the model #
     ###################
     for genes, quartets_batch in dataloaderTrain:
-    	#send to the device (either cpu or gpu)
+        #send to the device (either cpu or gpu)
         genes, quartets_batch = genes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
@@ -159,35 +183,53 @@ for epoch in range(1, n_epochs+1):
         optimizer.step()
         # update running training loss
         train_loss += loss.item()
-            
+    
+     # changing the learning rate following the schedule (for next step)
+    exp_lr_scheduler.step()        
     # print avg training statistics 
     train_loss = train_loss/len(dataloaderTrain)
-    print('Epoch: {} \tTraining Loss: {:.6f}'.format(
+    print('Epoch: {} \tTraining Loss: {:.6f} \t lr: {:.6f}'.format(
         epoch, 
-        train_loss
-        ))
+        train_loss,
+        optimizer.param_groups[0]['lr']
+        )) 
 
-    # we compute the test loss every 10 epochs 
-    if epoch % 10 == 0 :
-
-        correct = 0
-
+    correct = 0
+    total = 0
+    with torch.no_grad():
         for genes, quartets_batch in dataloaderTest:
-            #send to the device (either cpu or gpu)
+            #moving data to GPU
             genes, quartets_batch = genes.to(device), quartets_batch.to(device)
-            # forward pass: compute predicted outputs by passing inputs to the model
+
             quartetsNN = model(genes)
-            # calculate the loss
-            _, predicted = torch.max(quartetsNN, 1)
-            
+
+            _, predicted = torch.max(quartetsNN.data, 1)
+            total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
-        test_loss = correct/len(dataloaderTest)
+        print('Epoch: {} \t Test accuracy: {:.6f}'.format(
+            epoch, 
+            correct/total
+            )) 
 
-        print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
-                                                         test_loss))
 
-# # to do: how to save the data... can we do a 
-# dataiter = iter(dataloaderTest)
-# genes, quartets_batch = dataiter.next()
+torch.save(model.state_dict(), savePath)
 
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for genes, quartets_batch in dataloaderTrain:
+        #moving data to GPU
+        genes, quartets_batch = genes.to(device), quartets_batch.to(device)
+
+        quartetsNN = model(genes)
+
+        _, predicted = torch.max(quartetsNN.data, 1)
+        total += quartets_batch.size(0)
+        correct += (predicted == quartets_batch).sum().item()
+
+    print('Epoch: {} \t Training accuracy: {:.6f}'.format(
+        epoch, 
+        correct/total
+        )) 
