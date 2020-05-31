@@ -248,7 +248,7 @@ for epoch in range(1, n_epochs+1):
     print('Epoch: {} \tTraining Loss: {:.6f}'.format(
         epoch, 
         train_loss
-        ))
+        ), flush=True)
 
     # we compute the test loss every 10 epochs 
     if epoch % 10 == 0 :
