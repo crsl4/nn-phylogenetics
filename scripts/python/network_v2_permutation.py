@@ -214,7 +214,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 perm = _Permutation()
 
-n_epochs = 1000
+n_epochs = 3000
 
 print("Starting Training Loop")
 
