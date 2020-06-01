@@ -218,7 +218,7 @@ n_epochs = 1000
 
 print("Starting Training Loop")
 
-min_accuracy = 1e6
+min_accuracy = 0
 
 for epoch in range(1, n_epochs+1):
     # monitor training loss
@@ -254,7 +254,7 @@ for epoch in range(1, n_epochs+1):
     if epoch % 10 == 0 :
 
         model.eval()
-        correct = 0
+        correct, total = 0, 0
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
@@ -264,15 +264,16 @@ for epoch in range(1, n_epochs+1):
             # calculate the loss
             _, predicted = torch.max(quartetsNN, 1)
             
+            total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
-        test_loss = correct/len(dataloaderTest)
+        accuracyTest = correct/len(dataloaderTest)
 
         print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
-                                                         test_loss))
+                                                         accuracyTest))
 
-        if test_loss < min_accuracy:
-            min_accuracy = test_loss
+        if accuracyTest > min_accuracy:
+            min_accuracy = accuracyTest
             torch.save(model.state_dict(), "saved_model.pth")
 
 # # to do: how to save the data... can we do a 
