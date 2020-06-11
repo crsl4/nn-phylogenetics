@@ -25,8 +25,9 @@ mats = matsh5['matrices'][:]
 nSamples = labels.shape[0]
 
 mats = mats.reshape((1550, nSamples, -1))    
-mats = np.transpose(mats, (1, 0, 2))
+mats = np.transpose(mats, (1, 2, 0))
 # dims of mats is (Nsamples, NChannels, Nsequence)
+# in this case is (Nsamples, 80, 1550)
 
 nTrainSamples = 4500
 nTestSamples = 500
@@ -72,9 +73,9 @@ class _Permutation():
 
     def __call__(self, sample, label):
         # this is the function to perform the permutations 
-        taxa = torch.reshape(sample, (-1, 4,20)) 
-        taxaout = torch.stack([taxa[:,idx,:] for idx in self.permData]) 
-        taxaout = torch.reshape(taxaout, (24, -1, 80))
+        taxa = torch.reshape(sample, (4, 20, -1)) 
+        taxaout = torch.stack([taxa[idx,:,:] for idx in self.permData]) 
+        taxaout = torch.reshape(taxaout, (24, 80, -1))
 
         if label == 0:
             return (taxaout, self.permTaxon0)
@@ -106,7 +107,7 @@ class _Collate():
         else:
             Gen2 = torch.stack(GenData)
             # noe the sizes are hardcoded, this needs to change
-            Gen3 = Gen2.view(24*sizeBatch, 1550, 80)
+            Gen3 = Gen2.view(24*sizeBatch, 80,1550)
 
             Labels = torch.stack(LabelData)
             Labels2 = Labels.view(-1) 
