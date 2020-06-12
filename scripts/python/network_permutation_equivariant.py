@@ -198,6 +198,8 @@ class _PermutationModule(torch.nn.Module):
         d3 =  self._DescriptorModule(x[:,3,:,:])   
 
         # we compute by hand the different paths
+
+        # Quartet 1 (12|34)
         d01 = d0 + d1
         F1 = self._MergeModuleLv1(d01)
 
@@ -207,7 +209,17 @@ class _PermutationModule(torch.nn.Module):
         F12 = F1 + F2
         G1 = self._MergeModuleLv2(F12)
 
+        #Quartet 2 (13|24)
+        d02 = d0 + d2
+        F6 = self._MergeModuleLv1(d02)
 
+        d13 = d1 + d3
+        F5 = self._MergeModuleLv1(d13)
+
+        F56 = F5 + F6
+        G2 = self._MergeModuleLv2(F56)
+
+        # Quartet 3 (14|23)
         d03 = d0 + d3
         F3 = self._MergeModuleLv1(d03)
 
@@ -215,18 +227,10 @@ class _PermutationModule(torch.nn.Module):
         F4 = self._MergeModuleLv1(d12)
 
         F34 = F3 + F4
-        G2 = self._MergeModuleLv2(F34)
+        G3 = self._MergeModuleLv2(F34)
 
 
-        d13 = d1 + d3
-        F5 = self._MergeModuleLv1(d13)
-
-        d02 = d0 + d2
-        F6 = self._MergeModuleLv1(d02)
-
-        F56 = F5 + F6
-        G3 = self._MergeModuleLv2(F56)
-
+        # putting all the quartest together
         G = torch.cat([G1, G2, G3], -1) # concatenation at the end
 
         return G
@@ -238,13 +242,13 @@ dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
                                               shuffle=True)
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=100,
+                                             batch_size=batch_size,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 # defining the models
-D = _DescriptorModule()
+D  = _DescriptorModule()
 M1 = _MergeModule()
 M2 = _MergeModule2()
 
@@ -257,6 +261,9 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+
+model.load_state_dict(torch.load("saved_permutation_model_best_dataset_1.pth"))
+model.eval()
 
 n_epochs = 500
 
@@ -311,13 +318,13 @@ for epoch in range(1, n_epochs+1):
             total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
-        accuracyTest = correct/len(dataloaderTest)
+        accuracyTest = correct/total
 
         print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
                                                          accuracyTest))
 
         if accuracyTest > min_accuracy:
             min_accuracy = accuracyTest
-            torch.save(model.state_dict(), "saved_model.pth")
+            torch.save(model.state_dict(), "saved_permuation_model.pth")
 
 
