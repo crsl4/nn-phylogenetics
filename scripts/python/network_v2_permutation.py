@@ -1,15 +1,14 @@
-# network without using the permutation. 
-
 import numpy as np 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import torch
 import h5py
 import torch.nn as nn
 from torch.utils import data
+import itertools
 
 # number of available gpu
 ngpu = 1 
-batch_size = 32
+batch_size = 16
 
 dataRoot = "../../data"
 
@@ -26,8 +25,9 @@ mats = matsh5['matrices'][:]
 nSamples = labels.shape[0]
 
 mats = mats.reshape((1550, nSamples, -1))    
-mats = np.transpose(mats, (1, 0, 2))
+mats = np.transpose(mats, (1, 2, 0))
 # dims of mats is (Nsamples, NChannels, Nsequence)
+# in this case is (Nsamples, 80, 1550)
 
 nTrainSamples = 4500
 nTestSamples = 500
@@ -42,15 +42,79 @@ inputTest  = torch.Tensor(mats[-nTestSamples:-1, :, :])
 
 datasetTest = data.TensorDataset(inputTest, outputTest) 
 
-dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
-                                              batch_size=batch_size,
-                                              shuffle=True)
+## we use a class to storage the different permutations:
 
-dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=100,
-                                             shuffle=True)
+class _Permutation():
 
-device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+    def __init__(self):
+
+        self.permData = np.asarray(list(itertools.permutations(range(4))))
+        # hard coded transformation of taxons
+        self.permTaxon0 =  torch.tensor([ 0, 0, 1, 1, 
+                                          2, 2, 0, 0, 
+                                          2, 2, 1, 1, 
+                                          1, 1, 2, 2, 
+                                          0, 0, 2, 2, 
+                                          1, 1, 0, 0 ], dtype = torch.long)
+
+        self.permTaxon1 =  torch.tensor([ 1, 1, 0, 0, 
+                                          2, 2, 1, 1, 
+                                          2, 2, 0, 0, 
+                                          0, 0, 2, 2, 
+                                          1, 1, 2, 2, 
+                                          0, 0, 1, 1 ], dtype = torch.long)
+
+        self.permTaxon2 =  torch.tensor([ 2, 2, 0, 0, 
+                                          1, 1, 2, 2, 
+                                          1, 1, 0, 0, 
+                                          0, 0, 1, 1, 
+                                          2, 2, 1, 1, 
+                                          0, 0, 2, 2 ], dtype = torch.long)
+
+    def __call__(self, sample, label):
+        # this is the function to perform the permutations 
+        taxa = torch.reshape(sample, (4, 20, -1)) 
+        taxaout = torch.stack([taxa[idx,:,:] for idx in self.permData]) 
+        taxaout = torch.reshape(taxaout, (24, 80, -1))
+
+        if label == 0:
+            return (taxaout, self.permTaxon0)
+        elif label == 1:
+            return (taxaout, self.permTaxon1)
+        elif label == 2:
+            return (taxaout, self.permTaxon2)
+
+class _Collate():
+
+    def __init__(self):
+        self.perm = _Permutation()
+
+    def __call__(self, dataList):
+        
+        GenData = []
+        LabelData = []
+
+        sizeBatch = len(dataList)
+
+        for genes, labels in dataList:
+            (genesPerm, labelsPerm) = self.perm(genes, labels)  
+            GenData.append(genesPerm)
+            LabelData.append(labelsPerm)
+
+        if sizeBatch == 1:
+            return (GenData[0], LabelData[0])
+
+        else:
+            Gen2 = torch.stack(GenData)
+            # noe the sizes are hardcoded, this needs to change
+            Gen3 = Gen2.view(24*sizeBatch, 80,1550)
+
+            Labels = torch.stack(LabelData)
+            Labels2 = Labels.view(-1) 
+
+            return (Gen3, Labels2)
+
+
 
 ##############################################################
 # We specify the networks (this are quite simple, we should be
@@ -123,9 +187,24 @@ class _Model(torch.nn.Module):
 
 ###############################################
 
+collate_fc =  _Collate()
+
+
+dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
+                                              batch_size=batch_size,
+                                              shuffle=True, 
+                                              collate_fn = collate_fc)
+
+dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
+                                             batch_size=100,
+                                             shuffle=True)
+
+device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+
 # specify loss function
-# criterion = torch.nn.CrossEntropyLoss(reduction='sum')
-criterion = torch.nn.CrossEntropyLoss()
+criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+#criterion = torch.nn.CrossEntropyLoss()
 
 # define the model 
 model = _Model().to(device)
@@ -134,18 +213,23 @@ model = _Model().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 # TODO: add scheduler here!! 
 
+perm = _Permutation()
 
-n_epochs = 300
+n_epochs = 3000
+
+print("Starting Training Loop")
+
+min_accuracy = 0
 
 for epoch in range(1, n_epochs+1):
     # monitor training loss
     train_loss = 0.0
-    
+    model.train()
     ###################
     # train the model #
     ###################
     for genes, quartets_batch in dataloaderTrain:
-    	#send to the device (either cpu or gpu)
+        #send to the device (either cpu or gpu)
         genes, quartets_batch = genes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
@@ -165,12 +249,13 @@ for epoch in range(1, n_epochs+1):
     print('Epoch: {} \tTraining Loss: {:.6f}'.format(
         epoch, 
         train_loss
-        ))
+        ), flush=True)
 
     # we compute the test loss every 10 epochs 
     if epoch % 10 == 0 :
 
-        correct = 0
+        model.eval()
+        correct, total = 0, 0
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
@@ -180,14 +265,20 @@ for epoch in range(1, n_epochs+1):
             # calculate the loss
             _, predicted = torch.max(quartetsNN, 1)
             
+            total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
-        test_loss = correct/len(dataloaderTest)
+        accuracyTest = correct/len(dataloaderTest)
 
         print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
-                                                         test_loss))
+                                                         accuracyTest))
+
+        if accuracyTest > min_accuracy:
+            min_accuracy = accuracyTest
+            torch.save(model.state_dict(), "saved_model.pth")
 
 # # to do: how to save the data... can we do a 
-# dataiter = iter(dataloaderTest)
-# genes, quartets_batch = dataiter.next()
+dataiter = iter(dataloaderTest)
+genes, labels = dataiter.next()
+
 
