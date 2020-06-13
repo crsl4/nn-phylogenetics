@@ -286,7 +286,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 #model.load_state_dict(torch.load("saved_permutation_model_best_dataset_1.pth"))
 # model.eval()
 
-n_epochs = 1000
+n_epochs = 3000
 
 print("Starting Training Loop")
 
@@ -346,6 +346,7 @@ for epoch in range(1, n_epochs+1):
 
         if accuracyTest > min_accuracy:
             min_accuracy = accuracyTest
-            torch.save(model.state_dict(), "saved_permutation_model_shallow.pth")
+            torch.save(model.state_dict(), "saved_permutation_model_shallow_best.pth")
 
 
+ torch.save(model.state_dict(), "saved_permutation_model_shallow_last.pth")
