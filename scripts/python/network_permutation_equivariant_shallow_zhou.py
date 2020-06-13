@@ -349,4 +349,4 @@ for epoch in range(1, n_epochs+1):
             torch.save(model.state_dict(), "saved_permutation_model_shallow_best.pth")
 
 
- torch.save(model.state_dict(), "saved_permutation_model_shallow_last.pth")
+torch.save(model.state_dict(), "saved_permutation_model_shallow_last.pth")
