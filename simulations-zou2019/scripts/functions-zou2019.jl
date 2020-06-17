@@ -64,6 +64,10 @@ end
 ### simulate a quartet with branch lengths uniformly dist
 ### U(l,u)
 ## ss: seed
+## lba=false by default: long branch attraction case, based on Figure 3 Zou2020:
+## two short external branches have lengths b ranging from 0.1 to 1.0,
+## the two long branches have lengths a ranging from 2b to 40b,
+## and the internal branch has a length c ranging from 0.01b to b
 ### Rooted chosen randomly
 ## the random root was removed to implement the permutation
 ## strategy in Zou2019
@@ -72,7 +76,7 @@ function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer)
     quartets = ["((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));"] ##only thinking of unrooted
     ind = sample(1:3,1)[1]
     q = quartets[ind]
-    quartet = readTopology(q)
+    quartet = lba ? readTopologyLevel1(q) : readTopology(q)
     ## choose root randomly (or leave as is=balanced tree)
     # r = rand(Uniform(0,1),1)[1]
     # if(r<0.2)
@@ -85,8 +89,40 @@ function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer)
     #     rootatnode!(quartet,"4")
     # end
     ## setting branch lenghts
-    for e in quartet.edge
-        setLength!(e,rand(Uniform(l,u),1)[1])
+
+    if lba
+        b = rand(Uniform(l,u),1)[1]
+        c = rand(Uniform(0.01*b,b),1)[1]
+        a = rand(Uniform(2*b,40*b),1)[1]
+        ## internal branch:
+        intbl = findall([e.istIdentifiable for e in quartet.edge])[1]
+        setLength!(quartet.edge[intbl],c)
+        edges = [quartet.edge[intbl]]
+        ## external edges:
+        extbls = setdiff(1:length(quartet.edge),intbl)
+        ## first external edge, set BL=b:
+        setLength!(quartet.edge[extbls[1]],b)
+        push!(edges, quartet.edge[extbls[1]])
+        adje = adjacentedges(quartet.edge[extbls[1]])
+        ## we find the sister external edge, set BL=a:
+        for e in adje
+            if e!= quartet.edge[extbls[1]] && !e.istIdentifiable
+                e.length = a
+                push!(edges,e)
+            end
+        end
+        misse = setdiff(quartet.edge, edges)
+        ## second external edge, set BL=b:
+        setLength!(misse[1],b)
+        misse2 = setdiff(misse, [misse[1]])
+        ## sister set BL=a
+        misse2[1].length = a
+        ## rooting tree to match other simulations:
+        rootonedge!(quartet,quartet.edge[intbl])
+    else
+        for e in quartet.edge
+            setLength!(e,rand(Uniform(l,u),1)[1])
+        end
     end
     return writeTopology(quartet),ind
 end
@@ -211,4 +247,17 @@ function validPermutations()
 [2,4,3,5,1],
         [2,5,3,4,1]]
     return perm
+end
+
+## from master PhyloNetworks but can't update the package now
+function adjacentedges(centeredge::PhyloNetworks.Edge)
+    n = centeredge.node
+    length(n) == 2 || error("center edge is connected to $(length(n)) nodes")
+    @inbounds edges = copy(n[1].edge) # shallow copy, to avoid modifying the first node
+    @inbounds for ei in n[2].edge
+        ei === centeredge && continue # don't add the center edge again
+        # a second edge between nodes n[1] and n[2] would appear twice
+        push!(edges, ei)
+    end
+    return edges
 end

@@ -721,3 +721,52 @@ That is, for `rep-1.dat`, PAML is simulating sequences from the tree:
 ```
 The order of the taxa will be order read, so S1=4, S2=1, S3=2, S4=3.
 So, we might need to simulate the data again to force the order of taxa.
+
+
+# LBA simulations
+
+We repeat the quartet simulations, but now with long branch attraction branches (Figure 3a Zou2020): "two short external branches have lengths b ranging from 0.1 to 1.0, the two long branches have lengths a ranging from 2b to 40b, and the internal branch has a length c ranging from 0.01b to b".
+Added the option `lba = true` to the simulations script.
+
+We will only do 10,000 replicates now.
+
+#### 10,000 replicates on 2 threads (5000 each):
+Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=5000 (I tried 25000 but the computer crashed twice). We copy the `scripts` folder as two folder: `simulations-zou2019-lba` and `simulations-zou2019-lba-2`
+```shell
+julia simulations-zou2019.jl
+```
+Process started 6/17 3pm, ~finish 8pm
+
+- Each replicate produces a label (tree) and input matrix 80xL
+- For nrep replicates, we get two files:
+  - `labels.h5` with a vector of dimension nrep
+  - `matrices.h5` with a matrix 80*nrep by L, that has all matrices stacked
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## First thread:
+cd simulations-zou2019-lba
+tar -czvf simulations-zou2019-1.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-1.h5
+mv matrices.h5 matrices-1.h5
+##cp simulate-zou2019.jl simulate-zou2019-1.jl ## to keep the script ran (not used in the re-run because we had it)
+## move to results folder:
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-1.jl ../results
+
+## Second thread
+cd simulations-zou2019-lba-2
+tar -czvf simulations-zou2019-2.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-2.h5
+mv matrices.h5 matrices-2.h5
+##cp simulate-zou2019.jl simulate-zou2019-2.jl ## to keep the script ran
+## move to results folder:
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019-2.jl ../results
+```
