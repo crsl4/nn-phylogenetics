@@ -50,26 +50,26 @@ class _Permutation():
 
         self.permData = np.asarray(list(itertools.permutations(range(4))))
         # hard coded transformation of taxons
-        self.permTaxon0 =  torch.tensor([ 0, 0, 1, 1, 
-                                          2, 2, 0, 0, 
-                                          2, 2, 1, 1, 
-                                          1, 1, 2, 2, 
-                                          0, 0, 2, 2, 
-                                          1, 1, 0, 0 ], dtype = torch.long)
+        self.permTaxon0 =  torch.tensor([ 0, 0, 1, 2, 
+                                          1, 2, 0, 0, 
+                                          1, 2, 1, 2, 
+                                          2, 1, 2, 1, 
+                                          0, 0, 2, 1, 
+                                          2, 1, 0, 0], dtype = torch.long)
 
-        self.permTaxon1 =  torch.tensor([ 1, 1, 0, 0, 
-                                          2, 2, 1, 1, 
-                                          2, 2, 0, 0, 
-                                          0, 0, 2, 2, 
-                                          1, 1, 2, 2, 
-                                          0, 0, 1, 1 ], dtype = torch.long)
+        self.permTaxon1 =  torch.tensor([ 1, 2, 0, 0, 
+                                          2, 1, 2, 1, 
+                                          2, 1, 0, 0, 
+                                          0, 0, 1, 2, 
+                                          1, 2, 1, 2, 
+                                          0, 0, 2, 1 ], dtype = torch.long)
 
-        self.permTaxon2 =  torch.tensor([ 2, 2, 0, 0, 
-                                          1, 1, 2, 2, 
-                                          1, 1, 0, 0, 
-                                          0, 0, 1, 1, 
-                                          2, 2, 1, 1, 
-                                          0, 0, 2, 2 ], dtype = torch.long)
+        self.permTaxon2 =  torch.tensor([ 2, 1, 2, 1, 
+                                          0, 0, 1, 2, 
+                                          0, 0, 2, 1, 
+                                          1, 2, 0, 0, 
+                                          2, 1, 0, 0, 
+                                          1, 2, 1, 2 ], dtype = torch.long)
 
     def __call__(self, sample, label):
         # this is the function to perform the permutations 
@@ -215,7 +215,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 perm = _Permutation()
 
-n_epochs = 3000
+n_epochs = 500
 
 print("Starting Training Loop")
 
@@ -277,8 +277,37 @@ for epoch in range(1, n_epochs+1):
             min_accuracy = accuracyTest
             torch.save(model.state_dict(), "saved_model.pth")
 
-# # to do: how to save the data... can we do a 
-dataiter = iter(dataloaderTest)
-genes, labels = dataiter.next()
+# testing the data using the augmentation
 
 
+dataloaderTest2 = torch.utils.data.DataLoader(datasetTest, 
+                                              batch_size=batch_size,
+                                              shuffle=True, 
+                                              collate_fn = collate_fc)
+model.eval()
+correct, total = 0, 0
+
+for genes, quartets_batch in dataloaderTest2:
+    #send to the device (either cpu or gpu)
+    genes, quartets_batch = genes.to(device), quartets_batch.to(device)
+    # forward pass: compute predicted outputs by passing inputs to the model
+    quartetsNN = model(genes)
+    # calculate the loss
+    _, predicted = torch.max(quartetsNN, 1)
+    
+    total += quartets_batch.size(0)
+    correct += (predicted == quartets_batch).sum().item()
+
+accuracyTest = correct/total
+
+print('Final Test accuracy: {:.6f}'.format(accuracyTest))
+
+
+
+
+
+# # # to do: how to save the data... can we do a 
+# dataiter = iter(dataloaderTest)
+# genes, labels = dataiter.next()
+
+# genes, labels = genes.to(device), labels.to(device)
