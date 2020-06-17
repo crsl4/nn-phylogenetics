@@ -71,7 +71,7 @@ end
 ### Rooted chosen randomly
 ## the random root was removed to implement the permutation
 ## strategy in Zou2019
-function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer)
+function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer; lba=false::Bool)
     Random.seed!(ss)
     quartets = ["((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));"] ##only thinking of unrooted
     ind = sample(1:3,1)[1]

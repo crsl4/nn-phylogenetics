@@ -733,7 +733,11 @@ We will only do 10,000 replicates now.
 #### 10,000 replicates on 2 threads (5000 each):
 Different folders (because files are overwritten and have same names for PAML): `simulations-zou2019-?`, each is running nrep=5000 (I tried 25000 but the computer crashed twice). We copy the `scripts` folder as two folder: `simulations-zou2019-lba` and `simulations-zou2019-lba-2`
 ```shell
-julia simulations-zou2019.jl
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-zou2019-lba
+julia simulate-zou2019.jl
+
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-zou2019-lba-2
+julia simulate-zou2019.jl
 ```
 Process started 6/17 3pm, ~finish 8pm
 
