@@ -739,7 +739,7 @@ julia simulate-zou2019.jl
 cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-zou2019-lba-2
 julia simulate-zou2019.jl
 ```
-Process started 6/17 3pm, ~finish 8pm
+Process started 6/17 330pm, ~finish 830pm
 
 - Each replicate produces a label (tree) and input matrix 80xL
 - For nrep replicates, we get two files:
@@ -752,25 +752,27 @@ cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
 
 ## First thread:
 cd simulations-zou2019-lba
-tar -czvf simulations-zou2019-1.tar.gz rep-*
+tar -czvf simulations-zou2019-lba-1.tar.gz rep-*
 rm rep-*
-mv labels.h5 labels-1.h5
-mv matrices.h5 matrices-1.h5
+mv labels.h5 labels-lba-1.h5
+mv matrices.h5 matrices-lba-1.h5
 ##cp simulate-zou2019.jl simulate-zou2019-1.jl ## to keep the script ran (not used in the re-run because we had it)
 ## move to results folder:
 mv *.h5 ../results
 mv *.tar* ../results
-mv simulate-zou2019-1.jl ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-1.jl
+mv simulate-zou2019-lba-1.jl ../results
 
 ## Second thread
 cd simulations-zou2019-lba-2
-tar -czvf simulations-zou2019-2.tar.gz rep-*
+tar -czvf simulations-zou2019-lba-2.tar.gz rep-*
 rm rep-*
-mv labels.h5 labels-2.h5
-mv matrices.h5 matrices-2.h5
+mv labels.h5 labels-lba-2.h5
+mv matrices.h5 matrices-lba-2.h5
 ##cp simulate-zou2019.jl simulate-zou2019-2.jl ## to keep the script ran
 ## move to results folder:
 mv *.h5 ../results
 mv *.tar* ../results
-mv simulate-zou2019-2.jl ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-2.jl
+mv simulate-zou2019-lba-2.jl ../results
 ```
