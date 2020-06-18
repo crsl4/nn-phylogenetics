@@ -18,7 +18,7 @@ print("=================================================")
 # number of available gpu
 ngpu = 1 
 batch_size = 16
-
+lr = 0.001
 ###################################################
 ## Loading the data
 
@@ -252,7 +252,7 @@ model = _PermutationModule(D, M1, M2).to(device)
 criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 
 # specify optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 
 #model.load_state_dict(torch.load("saved_permutation_model_best_dataset_1.pth"))
@@ -318,7 +318,10 @@ for epoch in range(1, n_epochs+1):
 
         if accuracyTest > min_accuracy:
             min_accuracy = accuracyTest
-            torch.save(model.state_dict(), "saved_permutation_model_shallow_lba_best.pth")
+            torch.save(model.state_dict(), 
+                "saved_permutation_model_shallow_lr_{}_batch_{}lba_best.pth".format(str(lr), 
+                                                                                    str(batch_size)))
 
 
-torch.save(model.state_dict(), "saved_permutation_model_shallow_lba_last.pth")
+torch.save(model.state_dict(), "saved_permutation_model_shallow_lr_{}_batch_{}lba_last.pth".format(str(lr), 
+                                                                                    str(batch_size)))
