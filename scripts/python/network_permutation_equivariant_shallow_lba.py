@@ -5,6 +5,16 @@ import h5py
 import torch.nn as nn
 from torch.utils import data
 import itertools
+  
+import sys
+nameScript = sys.argv[0].split('/')[-1]
+
+# we are going to give all the arguments using a Json file
+nameJson = sys.argv[1]
+print("=================================================")
+print("Executing " + nameScript, flush = True)
+print("=================================================")
+
 
 # number of available gpu
 ngpu = 1 
@@ -21,6 +31,9 @@ Labels = 0
 for ii in range(1,2):
     labelFiles = "labels-lba-{}.h5".format(str(ii))
     matFiles = "matrices-lba-{}.h5".format(str(ii))
+
+    print("Loading Data in " + matFiles, flush = True)
+
 
     labelsh5 = h5py.File(dataRoot+"/"+labelFiles, 'r')
     labels = labelsh5['labels'][:].astype(np.int64)-1 
