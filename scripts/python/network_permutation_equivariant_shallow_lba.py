@@ -10,7 +10,6 @@ import sys
 nameScript = sys.argv[0].split('/')[-1]
 
 # we are going to give all the arguments using a Json file
-nameJson = sys.argv[1]
 print("=================================================")
 print("Executing " + nameScript, flush = True)
 print("=================================================")
