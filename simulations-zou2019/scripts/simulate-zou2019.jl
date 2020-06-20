@@ -15,12 +15,23 @@ model = 3 ##for control file PAML
 modeldatfile = "dayhoff.dat"
 blL = 0.02 ##lower bound unif for BL
 blU = 1.02 ##upper bound unif for BL
-lba = true ##long branch attraction case
-if lba
-    blL = 0.1
-    blU = 1.00
-end
+##long branch attraction case -------------------
+lba = true
+b = 0.1 ##[0.1,1.0]
+rab = 2 ##a=[2b,40b]
+rcb = 0.01 ##c=[0.01b,b]
+## ----------------------------------------------
 nrep = 5000
+
+if length(ARGS) > 0
+    rseed = parse(Int,ARGS[1])
+    nrep = parse(Int,ARGS[2])
+    if length(ARGS) > 2
+        b = parse(Float64,ARGS[3])
+        rab = parse(Float64,ARGS[4])
+        rcb = parse(Float64,ARGS[5])
+    end
+end
 
 Random.seed!(rseed)
 seeds = sample(1:5555555555,nrep)
@@ -32,7 +43,7 @@ matrices = zeros(L)
 for i in 1:nrep
     println("=====================================================")
     @show i
-    tree,ind = sampleRootedMetricQuartet(blL,blU, seeds[i], lba=lba)
+    tree,ind = sampleRootedMetricQuartet(blL,blU, seeds[i], lba=lba, b=b, rab=rab, rcb=rcb)
     namectl = string("rep-",i,".dat")
     createCtlFile(namectl, tree, seeds[i], L, ratealpha, model, modeldatfile)
     run(`./evolver 7 MCaa.dat`)

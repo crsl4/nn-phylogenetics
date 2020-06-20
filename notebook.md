@@ -776,3 +776,17 @@ mv *.tar* ../results
 mv simulate-zou2019.jl simulate-zou2019-lba-2.jl
 mv simulate-zou2019-lba-2.jl ../results
 ```
+
+It turns out that these simulations are wrong, because in Zou2020 they do no sample b,a,c from a distribution. Instead, they simply fix them.
+
+So, I will delete the lba files, and change the scripts.
+
+In total, there are the following 120 cases:
+- b=0.1, 0.2, 0.5, 1 (4)
+- a= 2b, 5b, 10b, 20b, 40b (5)
+- c=0.01b, 0.02b, 0.05b, 0.1b, 0.2b, 0.5b, b (6)
+
+We will only do the following 27 cases:
+- b=0.1, 0.5, 1
+- a=2b, 10b, 40b
+- c=0.01b, 0.1b, b
