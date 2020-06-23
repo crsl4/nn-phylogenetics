@@ -790,3 +790,570 @@ We will only do the following 27 cases:
 - b=0.1, 0.5, 1
 - a=2b, 10b, 40b
 - c=0.01b, 0.1b, b
+
+First, I need to create all the folders so that they can run in parallel: `simulations-lba-?`.
+
+We will run nrep=8000 and 5 cores in mac desktop (which is the limit that it can run simultaneously without running out of memory)
+```shell
+## b=0.1, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-1
+julia simulate-zou2019.jl 4738282 8000 0.1 2 0.01
+
+## b=0.1, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-2
+julia simulate-zou2019.jl 68113228 8000 0.1 2 0.1
+
+## b=0.1, a=2b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-3
+julia simulate-zou2019.jl 68163228 8000 0.1 2 1.0
+
+## b=0.1, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-4
+julia simulate-zou2019.jl 113683228 8000 0.1 10 0.01
+
+## b=0.1, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-5
+julia simulate-zou2019.jl 68326728 8000 0.1 10 0.1
+```
+Started 6/20 9pm, 6am
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=0.1, a=2b, c=0.01b
+cd simulations-lba-1
+tar -czvf simulations-lba-1-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-1-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-1-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-1.h5
+mv matrices.h5 matrices-lba-1.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-1.jl
+mv simulate-zou2019-lba-1.jl ../results
+
+## b=0.1, a=2b, c=0.1b
+cd simulations-lba-2
+tar -czvf simulations-lba-2-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-2-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-2-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-2.h5
+mv matrices.h5 matrices-lba-2.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-2.jl
+mv simulate-zou2019-lba-2.jl ../results
+
+## b=0.1, a=2b, c=b
+cd simulations-lba-3
+tar -czvf simulations-lba-3-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-3-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-3-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-3.h5
+mv matrices.h5 matrices-lba-3.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-3.jl
+mv simulate-zou2019-lba-3.jl ../results
+
+## b=0.1, a=10b, c=0.01b
+cd simulations-lba-4
+tar -czvf simulations-lba-4-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-4-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-4-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-4.h5
+mv matrices.h5 matrices-lba-4.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-4.jl
+mv simulate-zou2019-lba-4.jl ../results
+
+## b=0.1, a=10b, c=0.1b
+cd simulations-lba-5
+tar -czvf simulations-lba-5-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-5-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-5-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-5.h5
+mv matrices.h5 matrices-lba-5.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-5.jl
+mv simulate-zou2019-lba-5.jl ../results
+```
+
+```shell
+## b=0.1, a=10b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-6
+julia simulate-zou2019.jl 18683228 8000 0.1 10 1.0
+
+## b=0.1, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-7
+julia simulate-zou2019.jl 976683228 8000 0.1 40 0.01
+
+## b=0.1, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-8
+julia simulate-zou2019.jl 2325654 8000 0.1 40 0.1
+
+## b=0.1, a=40b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-9
+julia simulate-zou2019.jl 372783 8000 0.1 40 1.0
+
+## b=0.5, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-10
+julia simulate-zou2019.jl 58583625 8000 0.5 2 0.01
+```
+Started 6/21 10:30am, 7:40pm
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=0.1, a=10b, c=b
+cd simulations-lba-6
+tar -czvf simulations-lba-6-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-6-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-6-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-6.h5
+mv matrices.h5 matrices-lba-6.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-6.jl
+mv simulate-zou2019-lba-6.jl ../results
+
+## b=0.1, a=40b, c=0.01b
+cd simulations-lba-7
+tar -czvf simulations-lba-7-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-7-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-7-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-7.h5
+mv matrices.h5 matrices-lba-7.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-7.jl
+mv simulate-zou2019-lba-7.jl ../results
+
+## b=0.1, a=40b, c=0.1b
+cd simulations-lba-8
+tar -czvf simulations-lba-8-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-8-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-8-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-8.h5
+mv matrices.h5 matrices-lba-8.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-8.jl
+mv simulate-zou2019-lba-8.jl ../results
+
+## b=0.1, a=40b, c=b
+cd simulations-lba-9
+tar -czvf simulations-lba-9-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-9-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-9-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-9.h5
+mv matrices.h5 matrices-lba-9.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-9.jl
+mv simulate-zou2019-lba-9.jl ../results
+
+## b=0.5, a=2b, c=0.01b
+cd simulations-lba-10
+tar -czvf simulations-lba-10-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-10-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-10-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-10.h5
+mv matrices.h5 matrices-lba-10.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-10.jl
+mv simulate-zou2019-lba-10.jl ../results
+```
+
+
+```shell
+## b=0.5, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-11
+julia simulate-zou2019.jl 5722724 8000 0.5 2 0.1
+
+## b=0.5, a=2b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-12
+julia simulate-zou2019.jl 4919173 8000 0.5 2 1.0
+
+## b=0.5, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-13
+julia simulate-zou2019.jl 4728283 8000 0.5 10 0.01
+
+## b=0.5, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-14
+julia simulate-zou2019.jl 4473421 8000 0.5 10 0.1
+
+## b=0.5, a=10b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-15
+julia simulate-zou2019.jl 976422 8000 0.5 10 1.0
+```
+Started 6/21 9pm, finished 6:30am
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=0.5, a=2b, c=0.1b
+cd simulations-lba-11
+tar -czvf simulations-lba-11-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-11-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-11-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-11.h5
+mv matrices.h5 matrices-lba-11.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-11.jl
+mv simulate-zou2019-lba-11.jl ../results
+
+## b=0.5, a=2b, c=b
+cd simulations-lba-12
+tar -czvf simulations-lba-12-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-12-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-12-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-12.h5
+mv matrices.h5 matrices-lba-12.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-12.jl
+mv simulate-zou2019-lba-12.jl ../results
+
+## b=0.5, a=10b, c=0.01b
+cd simulations-lba-13
+tar -czvf simulations-lba-13-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-13-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-13-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-13.h5
+mv matrices.h5 matrices-lba-13.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-13.jl
+mv simulate-zou2019-lba-13.jl ../results
+
+## b=0.5, a=10b, c=0.1b
+cd simulations-lba-14
+tar -czvf simulations-lba-14-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-14-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-14-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-14.h5
+mv matrices.h5 matrices-lba-14.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-14.jl
+mv simulate-zou2019-lba-14.jl ../results
+
+## b=0.5, a=10b, c=b
+cd simulations-lba-15
+tar -czvf simulations-lba-15-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-15-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-15-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-15.h5
+mv matrices.h5 matrices-lba-15.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-15.jl
+mv simulate-zou2019-lba-15.jl ../results
+```
+
+```shell
+## b=0.5, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-16
+julia simulate-zou2019.jl 416173 8000 0.5 40 0.01
+
+## b=0.5, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-17
+julia simulate-zou2019.jl 3615253 8000 0.5 40 0.1
+
+## b=0.5, a=40b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-18
+julia simulate-zou2019.jl 467733 8000 0.5 40 1.0
+
+## b=1, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-19
+julia simulate-zou2019.jl 675223 8000 1 2 0.01
+
+## b=1, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-20
+julia simulate-zou2019.jl 7842344 8000 1 2 0.1
+```
+Started 6/22 830am, finish 6:30pm
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=0.5, a=40b, c=0.01b
+cd simulations-lba-16
+tar -czvf simulations-lba-16-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-16-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-16-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-16.h5
+mv matrices.h5 matrices-lba-16.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-16.jl
+mv simulate-zou2019-lba-16.jl ../results
+
+## b=0.5, a=40b, c=0.1b
+cd simulations-lba-17
+tar -czvf simulations-lba-17-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-17-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-17-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-17.h5
+mv matrices.h5 matrices-lba-17.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-17.jl
+mv simulate-zou2019-lba-17.jl ../results
+
+## b=0.5, a=40b, c=b
+cd simulations-lba-18
+tar -czvf simulations-lba-18-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-18-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-18-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-18.h5
+mv matrices.h5 matrices-lba-18.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-18.jl
+mv simulate-zou2019-lba-18.jl ../results
+
+## b=1, a=2b, c=0.01b
+cd simulations-lba-19
+tar -czvf simulations-lba-19-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-19-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-19-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-19.h5
+mv matrices.h5 matrices-lba-19.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-19.jl
+mv simulate-zou2019-lba-19.jl ../results
+
+## b=1, a=2b, c=0.1b
+cd simulations-lba-20
+tar -czvf simulations-lba-20-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-20-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-20-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-20.h5
+mv matrices.h5 matrices-lba-20.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-20.jl
+mv simulate-zou2019-lba-20.jl ../results
+```
+
+
+```shell
+## b=1, a=2b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-21
+julia simulate-zou2019.jl 88422 8000 1 2 1.0
+
+## b=1, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-22
+julia simulate-zou2019.jl 1346243 8000 1 10 0.01
+
+## b=1, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-23
+julia simulate-zou2019.jl 3363123 8000 1 10 0.1
+
+## b=1, a=10b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-24
+julia simulate-zou2019.jl 114134 8000 1 10 1.0
+
+## b=1, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-25
+julia simulate-zou2019.jl 3245235 8000 1 40 0.01
+```
+Started 6/22 630pm, finished 4:30am
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=1, a=2b, c=b
+cd simulations-lba-21
+tar -czvf simulations-lba-21-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-21-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-21-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-21.h5
+mv matrices.h5 matrices-lba-21.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-21.jl
+mv simulate-zou2019-lba-21.jl ../results
+
+## b=1, a=10b, c=0.01b
+cd simulations-lba-22
+tar -czvf simulations-lba-22-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-22-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-22-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-22.h5
+mv matrices.h5 matrices-lba-22.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-22.jl
+mv simulate-zou2019-lba-22.jl ../results
+
+## b=1, a=10b, c=0.1b
+cd simulations-lba-23
+tar -czvf simulations-lba-23-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-23-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-23-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-23.h5
+mv matrices.h5 matrices-lba-23.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-23.jl
+mv simulate-zou2019-lba-23.jl ../results
+
+## b=1, a=10b, c=b
+cd simulations-lba-24
+tar -czvf simulations-lba-24-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-24-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-24-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-24.h5
+mv matrices.h5 matrices-lba-24.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-24.jl
+mv simulate-zou2019-lba-24.jl ../results
+
+## b=1, a=40b, c=0.01b
+cd simulations-lba-25
+tar -czvf simulations-lba-25-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-25-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-25-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-25.h5
+mv matrices.h5 matrices-lba-25.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-25.jl
+mv simulate-zou2019-lba-25.jl ../results
+```
+
+
+```shell
+## b=1, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-26
+julia simulate-zou2019.jl 45435 8000 1 40 0.1
+
+## b=1, a=40b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-27
+julia simulate-zou2019.jl 346266 8000 1 40 1.0
+```
+Started 6/23 9am, finished 4pm.
+
+We summarize the files:
+```shell
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019
+
+## b=1, a=40b, c=0.1b
+cd simulations-lba-26
+tar -czvf simulations-lba-26-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-26-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-26-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-26.h5
+mv matrices.h5 matrices-lba-26.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-26.jl
+mv simulate-zou2019-lba-26.jl ../results
+
+## b=1, a=40b, c=b
+cd simulations-lba-27
+tar -czvf simulations-lba-27-1.tar.gz rep-1*
+rm rep-1*
+tar -czvf simulations-lba-27-2.tar.gz rep-2*
+rm rep-2*
+tar -czvf simulations-lba-27-3.tar.gz rep-*
+rm rep-*
+mv labels.h5 labels-lba-27.h5
+mv matrices.h5 matrices-lba-27.h5
+mv *.h5 ../results
+mv *.tar* ../results
+mv simulate-zou2019.jl simulate-zou2019-lba-27.jl
+mv simulate-zou2019-lba-27.jl ../results
+```
