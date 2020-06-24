@@ -18,22 +18,23 @@ print("=================================================")
 
 # opening Json file 
 jsonFile = open(nameJson) 
-data = json.load(jsonFile)   
+dataJson = json.load(jsonFile)   
 
 # loading the input data from the json file
-ngpu = data["ngpu"]                  # number of GPUS
-lr = data["lr"]                      # learning rate
-batch_size = data["batchSize"]       # batch size
+ngpu = dataJson["ngpu"]                  # number of GPUS
+lr = dataJson["lr"]                      # learning rate
+batch_size = dataJson["batchSize"]       # batch size
 
-dataRoot = data["dataRoot"]          # data folder
-modelRoot = data["modelRoot"]   
+dataRoot = dataJson["dataRoot"]          # data folder
+modelRoot = dataJson["modelRoot"]   
 
-labelFile = data["labelFile"]        # file with labels
-matFile = data["matFile"]            # file with sequences
+labelFile = dataJson["labelFile"]        # file with labels
+matFile = dataJson["matFile"]            # file with sequences
 
-nTrainSamples = data["nTrainSamples"]
-nTestSamples = data["nTestSamples"]
+nTrainSamples = dataJson["nTrainSamples"]
+nTestSamples = dataJson["nTestSamples"]
 
+nEpochs  = dataJson["nEpochs"]
 
 print("Loading Data in " + matFile, flush = True)
 
@@ -50,7 +51,7 @@ mats = mats.reshape((1550, nSamples, -1))
 mats = np.transpose(mats, (1, 2, 0))
 # dims of mats is (Nsamples, NChannels, Nsequence)
 
-print("Number of samples-{}".format(labels.shape[0]))
+print("Number of samples: {}".format(labels.shape[0]))
 
 assert nTrainSamples + nTestSamples <=  nSamples
 
@@ -252,13 +253,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
 
-n_epochs = 3000
-
 print("Starting Training Loop")
 
-min_accuracy = 0
+maxAccuracy = 0
 
-for epoch in range(1, n_epochs+1):
+for epoch in range(1, nEpochs+1):
     # monitor training loss
     train_loss = 0.0
     model.train()
@@ -310,8 +309,8 @@ for epoch in range(1, n_epochs+1):
         print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
                                                          accuracyTest))
 
-        if accuracyTest > min_accuracy:
-            min_accuracy = accuracyTest
+        if accuracyTest > maxAccuracy:
+            maxAccuracy = accuracyTest
             torch.save(model.state_dict(), modelRoot + "/" +
                 "saved_{}_{}_lr_{}_batch_{}_lba_best.pth".format(nameScript.split(".")[0],
                                                                  nameJson.split(".")[0],
