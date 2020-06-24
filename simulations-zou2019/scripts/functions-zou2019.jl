@@ -68,32 +68,20 @@ end
 ## two short external branches have lengths b ranging from 0.1 to 1.0,
 ## the two long branches have lengths a ranging from 2b to 40b,
 ## and the internal branch has a length c ranging from 0.01b to b
-### Rooted chosen randomly
+## Root chosen randomly
 ## the random root was removed to implement the permutation
 ## strategy in Zou2019
-function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer; lba=false::Bool)
+function sampleRootedMetricQuartet(l::Number,u::Number, ss::Integer;
+                                   lba=false::Bool, b=0.01::Float64, rab=2.0::Float64, rcb=0.01::Float64)
     Random.seed!(ss)
     quartets = ["((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));"] ##only thinking of unrooted
     ind = sample(1:3,1)[1]
     q = quartets[ind]
     quartet = lba ? readTopologyLevel1(q) : readTopology(q)
-    ## choose root randomly (or leave as is=balanced tree)
-    # r = rand(Uniform(0,1),1)[1]
-    # if(r<0.2)
-    #     rootatnode!(quartet,"1")
-    # elseif(r<0.4)
-    #     rootatnode!(quartet,"2")
-    # elseif(r<0.6)
-    #     rootatnode!(quartet,"3")
-    # elseif(r<0.8)
-    #     rootatnode!(quartet,"4")
-    # end
     ## setting branch lenghts
-
     if lba
-        b = rand(Uniform(l,u),1)[1]
-        c = rand(Uniform(0.01*b,b),1)[1]
-        a = rand(Uniform(2*b,40*b),1)[1]
+        c = rcb*b
+        a = rab*b
         ## internal branch:
         intbl = findall([e.istIdentifiable for e in quartet.edge])[1]
         setLength!(quartet.edge[intbl],c)
