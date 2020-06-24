@@ -5,68 +5,62 @@ import h5py
 import torch.nn as nn
 from torch.utils import data
 import itertools
-  
+import json
 import sys
+
 nameScript = sys.argv[0].split('/')[-1]
 
 # we are going to give all the arguments using a Json file
+nameJson = sys.argv[1]
 print("=================================================")
-print("Executing " + nameScript, flush = True)
+print("Executing " + nameScript + " following " + nameJson, flush = True)
 print("=================================================")
 
+# opening Json file 
+jsonFile = open(nameJson) 
+data = json.load(jsonFile)   
 
-# number of available gpu
-ngpu = 1 
-batch_size = 16
-lr = 0.001
-###################################################
-## Loading the data
+# loading the input data from the json file
+ngpu = data["ngpu"]                  # number of GPUS
+lr = data["lr"]                      # learning rate
+batch_size = data["batchSize"]       # batch size
 
-dataRoot = "../../data"
+dataRoot = data["dataRoot"]          # data folder
+modelRoot = data["modelRoot"]   
 
-Mats = 0
-Labels = 0
+labelFile = data["labelFile"]        # file with labels
+matFile = data["matFile"]            # file with sequences
 
-for ii in range(1,2):
-    labelFiles = "labels-lba-{}.h5".format(str(ii))
-    matFiles = "matrices-lba-{}.h5".format(str(ii))
-
-    print("Loading Data in " + matFiles, flush = True)
+nTrainSamples = data["nTrainSamples"]
+nTestSamples = data["nTestSamples"]
 
 
-    labelsh5 = h5py.File(dataRoot+"/"+labelFiles, 'r')
-    labels = labelsh5['labels'][:].astype(np.int64)-1 
-    # classes from 0 to C-1
+print("Loading Data in " + matFile, flush = True)
+
+labelsh5 = h5py.File(dataRoot+"/"+labelFile, 'r')
+labels = labelsh5['labels'][:].astype(np.int64)-1 
+# classes from 0 to C-1
     
-    matsh5 = h5py.File(dataRoot+"/"+matFiles, 'r')
-    mats = matsh5['matrices'][:]
+matsh5 = h5py.File(dataRoot+"/"+matFile, 'r')
+mats = matsh5['matrices'][:]
 
-    nSamples = labels.shape[0]
+nSamples = labels.shape[0]
 
-    mats = mats.reshape((1550, nSamples, -1))    
-    mats = np.transpose(mats, (1, 2, 0))
-    # dims of mats is (Nsamples, NChannels, Nsequence)
+mats = mats.reshape((1550, nSamples, -1))    
+mats = np.transpose(mats, (1, 2, 0))
+# dims of mats is (Nsamples, NChannels, Nsequence)
 
-    if type(Mats) == int :
-        # we initialize the Mats
-        Mats = mats
-        Labels = labels
-    else: 
-        Mats = np.concatenate([Mats, mats], axis = 0)
-        Labels = np.concatenate([Labels, labels], axis = 0)
+print("Number of samples-{}".format(labels.shape[0]))
 
-print("Number of samples-{}".format(Labels.shape[0]))
+assert nTrainSamples + nTestSamples <=  nSamples
 
-nTrainSamples = 4500
-nTestSamples = 500
-
-outputTrain = torch.tensor(Labels[0:nTrainSamples])
-inputTrain  = torch.Tensor(Mats[0:nTrainSamples, :, :])
+outputTrain = torch.tensor(labels[0:nTrainSamples])
+inputTrain  = torch.Tensor(mats[0:nTrainSamples, :, :])
 
 datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 
-outputTest = torch.tensor(Labels[-nTestSamples:-1])
-inputTest  = torch.Tensor(Mats[-nTestSamples:-1, :, :])
+outputTest = torch.tensor(labels[-nTestSamples:-1])
+inputTest  = torch.Tensor(mats[-nTestSamples:-1, :, :])
 
 datasetTest = data.TensorDataset(inputTest, outputTest) 
 
@@ -255,7 +249,7 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 
-#model.load_state_dict(torch.load("saved_permutation_model_best_dataset_1.pth"))
+model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
 
 n_epochs = 3000
@@ -318,10 +312,15 @@ for epoch in range(1, n_epochs+1):
 
         if accuracyTest > min_accuracy:
             min_accuracy = accuracyTest
-            torch.save(model.state_dict(), 
-                "saved_permutation_model_shallow_lr_{}_batch_{}lba_best.pth".format(str(lr), 
-                                                                                    str(batch_size)))
+            torch.save(model.state_dict(), modelRoot + "/" +
+                "saved_{}_{}_lr_{}_batch_{}_lba_best.pth".format(nameScript.split(".")[0],
+                                                                 nameJson.split(".")[0],
+                                                                str(lr), 
+                                                                 str(batch_size)))
 
 
-torch.save(model.state_dict(), "saved_permutation_model_shallow_lr_{}_batch_{}lba_last.pth".format(str(lr), 
-                                                                                    str(batch_size)))
+torch.save(model.state_dict(), modelRoot + "/" +
+           "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
+                                                            nameJson.split(".")[0],
+                                                            str(lr), 
+                                                            str(batch_size)))
