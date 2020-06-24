@@ -250,7 +250,7 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 
-model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
+# model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
 
 print("Starting Training Loop")
