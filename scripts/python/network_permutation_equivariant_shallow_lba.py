@@ -36,7 +36,16 @@ nTestSamples = dataJson["nTestSamples"]
 
 nEpochs  = dataJson["nEpochs"]
 
-print("Loading Data in " + matFile, flush = True)
+print("=================================================\n")
+
+print("Learning Rate {} ".format(lr))
+print("Batch Size {} \n".format(batch_size))
+
+print("=================================================")
+
+print("Loading Squence Data in " + matFile, flush = True)
+print("Loading Label Data in " + labelFile, flush = True)
+
 
 labelsh5 = h5py.File(dataRoot+"/"+labelFile, 'r')
 labels = labelsh5['labels'][:].astype(np.int64)-1 
