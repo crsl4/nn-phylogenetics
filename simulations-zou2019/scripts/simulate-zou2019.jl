@@ -4,7 +4,7 @@
 ## (cannot be extended to any size of tree)
 ## Claudia March 2020
 
-using PhyloNetworks, Random, Distributions, Flux
+using PhyloNetworks, Random, Distributions, Flux, HDF5
 include("functions-zou2019.jl")
 
 ## Input
@@ -22,6 +22,7 @@ rab = 2 ##a=[2b,40b]
 rcb = 0.01 ##c=[0.01b,b]
 ## ----------------------------------------------
 nrep = 5000
+onehot = false ## convert seqs to one-hot encoding?
 
 if length(ARGS) > 0
     rseed = parse(Int,ARGS[1])
@@ -31,33 +32,49 @@ if length(ARGS) > 0
         rab = parse(Float64,ARGS[4])
         rcb = parse(Float64,ARGS[5])
     end
+    if length(ARGS) > 5
+        onehot = convert(Bool,ARGS[6]) ## ARGS[6] must be 0/1
+    end
 end
 
-Random.seed!(rseed)
+Random.seed!(rseed);
 seeds = sample(1:5555555555,nrep)
 makeOdd!(seeds) ## we need odd seed for PAML
 
 labels = zeros(nrep)
 matrices = zeros(L)
 
+outfile = string("seq",rseed,".in")
+if lba
+    outfile = string("seq",rseed,"-",b,"-",rab,"-",rcb,".in")
+end
+
+
 for i in 1:nrep
     println("=====================================================")
     @show i
+    app = i == 1 ? false : true
     tree,ind = sampleRootedMetricQuartet(blL,blU, seeds[i], lba=lba, b=b, rab=rab, rcb=rcb)
     namectl = string("rep-",i,".dat")
     createCtlFile(namectl, tree, seeds[i], L, ratealpha, model, modeldatfile)
     run(`./evolver 7 MCaa.dat`)
     run(`cp mc.paml rep-$i.paml`)
-    mat = convert2onehot("mc.paml",L)
-    labels[i] = ind
-    global matrices
-    matrices = hcat(matrices,mat)
+    if onehot
+        mat = convert2onehot("mc.paml",L)
+        labels[i] = ind
+        global matrices
+        matrices = hcat(matrices,mat)
+    else
+        global app
+        writeSequence2File("mc.paml",L,outfile,append=app)
+    end
 end
-matrices = matrices'
-matrices = matrices[2:end,:] ## 80*nrep by L: each replicate has a 80xL matrix, all stacked
 
-using HDF5
-h5write("labels.h5","labels",labels)
-h5write("matrices.h5","matrices",matrices)
+if onehot
+    matrices = matrices'
+    matrices = matrices[2:end,:] ## 80*nrep by L: each replicate has a 80xL matrix, all stacked
 
+    h5write("labels.h5","labels",labels)
+    h5write("matrices.h5","matrices",matrices)
+end
 

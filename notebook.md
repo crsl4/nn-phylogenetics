@@ -434,10 +434,6 @@ I will put the labels and matrices files in a shared drive to share with Leo.
 
 Deleting the h5 files locally because they are heavy, and they are in google drive now.
 
-## Using Zou2019 script to simulate trees n=5 (quintets)
-
-Created file `simulate-zou2019-n5.jl` with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
-Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
 
 # Understanding Zou2019 permutations
 From the main text:
@@ -1357,3 +1353,15 @@ mv *.tar* ../results
 mv simulate-zou2019.jl simulate-zou2019-lba-27.jl
 mv simulate-zou2019-lba-27.jl ../results
 ```
+
+### Adding more simulations to LBA cases
+
+We noticed that we do not have the same performance as in the Zou2019 paper. It could be that we are using a much smaller sample size (8000 vs 100k in Zou2019).
+
+## Using Zou2019 script to simulate trees n=5 (quintets)
+
+Created file `simulate-n5.jl` and `functions.jl` which is a copy of the functions for Zou2019 (`functions-zou2019.jl`)
+
+with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
+Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
+
