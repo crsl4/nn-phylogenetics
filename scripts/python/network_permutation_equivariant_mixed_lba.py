@@ -91,6 +91,24 @@ class _ResidueModule(torch.nn.Module):
     def forward(self, x):
         return x + self.layers(x)
 
+class _ResidueModulev2(torch.nn.Module):
+
+    def __init__(self, channel_count):
+        super().__init__()
+        self.layers = torch.nn.Sequential(
+            torch.nn.Conv1d(channel_count, channel_count, 
+                            3, padding = 1 ),
+            torch.nn.BatchNorm1d(channel_count),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(channel_count, channel_count,
+                            3, padding = 1 ),
+            torch.nn.BatchNorm1d(channel_count),
+            torch.nn.ReLU(),
+        )
+
+    def forward(self, x):
+        return x + self.layers(x)
+
 
 class _ResidueModuleDense(torch.nn.Module):
 
@@ -142,14 +160,12 @@ class _MergeModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
+            _ResidueModulev2(20),
+            _ResidueModulev2(20),
+            _ResidueModulev2(20),
+            _ResidueModulev2(20),
+            _ResidueModulev2(20),
+            _ResidueModulev2(20),
         )
 
     def forward(self, x):
@@ -240,6 +256,7 @@ dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                              batch_size=batch_size,
+                                             num_workers=4,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -332,3 +349,7 @@ torch.save(model.state_dict(), modelRoot + "/" +
                                                             nameJson.split(".")[0],
                                                             str(lr), 
                                                             str(batch_size)))
+
+
+## testing and saving data to centralized file 
+
