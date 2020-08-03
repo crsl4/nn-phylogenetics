@@ -1354,9 +1354,181 @@ mv simulate-zou2019.jl simulate-zou2019-lba-27.jl
 mv simulate-zou2019-lba-27.jl ../results
 ```
 
+We move all the results to `v3`:
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+mv *.h5 v3
+mv *.jl v3
+mv *.gz v3
+```
+
 ### Adding more simulations to LBA cases
 
 We noticed that we do not have the same performance as in the Zou2019 paper. It could be that we are using a much smaller sample size (8000 vs 100k in Zou2019).
+
+In total, there are the following 120 cases:
+- b=0.1, 0.2, 0.5, 1 (4)
+- a= 2b, 5b, 10b, 20b, 40b (5)
+- c=0.01b, 0.02b, 0.05b, 0.1b, 0.2b, 0.5b, b (6)
+
+We will only do the following 27 cases:
+- b=0.1, 0.5, 1
+- a=2b, 10b, 40b
+- c=0.01b, 0.1b, b
+
+First, I need to create all the folders so that they can run in parallel: `simulations-lba-?`:
+```shell
+for i in {1..27}
+do
+mkdir simulations-lba-$i
+done
+
+for i in {1..27}
+do
+cp scripts/* simulations-lba-$i/
+done
+```
+
+We will run nrep=100000 and 10 cores in mac desktop (since we are not saving the onehot matrices, I think we can use more cores):
+```shell
+## b=0.1, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-1
+julia simulate-zou2019.jl 4738282 100000 0.1 2 0.01 0
+
+## b=0.1, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-2
+julia simulate-zou2019.jl 68113228 100000 0.1 2 0.1 0
+
+## b=0.1, a=2b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-3
+julia simulate-zou2019.jl 68163228 100000 0.1 2 1.0 0
+
+## b=0.1, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-4
+julia simulate-zou2019.jl 113683228 100000 0.1 10 0.01 0
+
+## b=0.1, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-5
+julia simulate-zou2019.jl 68326728 100000 0.1 10 0.1 0
+
+## b=0.1, a=10b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-6
+julia simulate-zou2019.jl 18683228 100000 0.1 10 1.0 0
+
+## b=0.1, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-7
+julia simulate-zou2019.jl 976683228 100000 0.1 40 0.01 0
+
+## b=0.1, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-8
+julia simulate-zou2019.jl 2325654 100000 0.1 40 0.1 0
+
+## b=0.1, a=40b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-9
+julia simulate-zou2019.jl 372783 100000 0.1 40 1.0 0
+
+## b=0.5, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-10
+julia simulate-zou2019.jl 58583625 100000 0.5 2 0.01 0
+```
+Started 8/2 9pm, finished 1am.
+
+
+```shell
+## b=0.5, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-11
+julia simulate-zou2019.jl 5722724 100000 0.5 2 0.1 0
+
+## b=0.5, a=2b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-12
+julia simulate-zou2019.jl 4919173 100000 0.5 2 1.0 0
+
+## b=0.5, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-13
+julia simulate-zou2019.jl 4728283 100000 0.5 10 0.01 0
+
+## b=0.5, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-14
+julia simulate-zou2019.jl 4473421 100000 0.5 10 0.1 0
+
+## b=0.5, a=10b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-15
+julia simulate-zou2019.jl 976422 100000 0.5 10 1.0 0
+
+## b=0.5, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-16
+julia simulate-zou2019.jl 416173 100000 0.5 40 0.01 0
+
+## b=0.5, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-17
+julia simulate-zou2019.jl 3615253 100000 0.5 40 0.1 0
+
+## b=0.5, a=40b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-18
+julia simulate-zou2019.jl 467733 100000 0.5 40 1.0 0
+
+## b=1, a=2b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-19
+julia simulate-zou2019.jl 675223 100000 1 2 0.01 0
+
+## b=1, a=2b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-20
+julia simulate-zou2019.jl 7842344 100000 1 2 0.1 0
+
+## b=1, a=2b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-21
+julia simulate-zou2019.jl 88422 100000 1 2 1.0 0
+
+## b=1, a=10b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-22
+julia simulate-zou2019.jl 1346243 100000 1 10 0.01 0
+```
+Started 8/3 12pm, finished 4pm.
+
+
+```shell
+## b=1, a=10b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-23
+julia simulate-zou2019.jl 3363123 100000 1 10 0.1 0
+
+## b=1, a=10b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-24
+julia simulate-zou2019.jl 114134 100000 1 10 1.0 0
+
+## b=1, a=40b, c=0.01b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-25
+julia simulate-zou2019.jl 3245235 100000 1 40 0.01 0
+
+## b=1, a=40b, c=0.1b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-26
+julia simulate-zou2019.jl 45435 100000 1 40 0.1 0
+
+## b=1, a=40b, c=b
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-27
+julia simulate-zou2019.jl 346266 100000 1 40 1.0 0
+```
+Started 8/3 830am, finish 1230pm
+
+```shell
+for i in {1..27}
+do
+cp simulations-lba-$i/*.in results
+done
+
+cd results
+ls *.in | wc -l  ##54
+```
+
+Copy the *.in files to shared google drive.
+Folders stored in `v4` for now.
+
+
+Next steps:
+- simulations for 5 taxa (don't do the one hot encoding)
+- read existing NN papers
+- compare with other standard inference methods
+
+
 
 ## Using Zou2019 script to simulate trees n=5 (quintets)
 

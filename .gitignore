@@ -2,6 +2,7 @@
 data
 simulations
 *.h5
+*.in
 
 # Compiled source #
 ###################

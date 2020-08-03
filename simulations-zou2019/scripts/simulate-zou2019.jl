@@ -33,7 +33,7 @@ if length(ARGS) > 0
         rcb = parse(Float64,ARGS[5])
     end
     if length(ARGS) > 5
-        onehot = convert(Bool,ARGS[6]) ## ARGS[6] must be 0/1
+        onehot = convert(Bool,parse(Int,ARGS[6])) ## ARGS[6] must be 0/1
     end
 end
 
@@ -41,13 +41,18 @@ Random.seed!(rseed);
 seeds = sample(1:5555555555,nrep)
 makeOdd!(seeds) ## we need odd seed for PAML
 
-labels = zeros(nrep)
-matrices = zeros(L)
-
-outfile = string("seq",rseed,".in")
-if lba
-    outfile = string("seq",rseed,"-",b,"-",rab,"-",rcb,".in")
+if onehot
+    labels = zeros(nrep)
+    matrices = zeros(L)
 end
+
+outfilelab = string("labels",rseed,".in")
+outfileseq = string("sequences",rseed,".in")
+if lba
+    outfilelab = string("labels",rseed,"-",b,"-",rab,"-",rcb,".in")
+    outfileseq = string("sequences",rseed,"-",b,"-",rab,"-",rcb,".in")
+end
+f = open(outfilelab,"w")
 
 
 for i in 1:nrep
@@ -55,20 +60,30 @@ for i in 1:nrep
     @show i
     app = i == 1 ? false : true
     tree,ind = sampleRootedMetricQuartet(blL,blU, seeds[i], lba=lba, b=b, rab=rab, rcb=rcb)
+
+    if onehot
+        labels[i] = ind
+    else
+        global f
+        write(f,string(ind))
+        write(f,"\n")
+    end
     namectl = string("rep-",i,".dat")
     createCtlFile(namectl, tree, seeds[i], L, ratealpha, model, modeldatfile)
     run(`./evolver 7 MCaa.dat`)
-    run(`cp mc.paml rep-$i.paml`)
     if onehot
+        run(`cp mc.paml rep-$i.paml`)
         mat = convert2onehot("mc.paml",L)
-        labels[i] = ind
         global matrices
         matrices = hcat(matrices,mat)
     else
         global app
-        writeSequence2File("mc.paml",L,outfile,append=app)
+        writeSequence2File("mc.paml",L,outfileseq,append=app)
+        run(`rm mc.paml`)
+        run(`rm rep-$i.dat`)
     end
 end
+close(f)
 
 if onehot
     matrices = matrices'
