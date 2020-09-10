@@ -253,7 +253,7 @@ end
 
 ## function to read the simulated sequences from PAML
 ## and write without taxon names for the NN
-## sequences saved to outfile
+## sequences saved to outfile: 4 x L
 ## append=true means that the file already exists and we append the
 ## sequences to the existing file
 function writeSequence2File(name::String, L::Integer, outfile::String ; append=app::Bool)

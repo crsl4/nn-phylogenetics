@@ -1522,6 +1522,23 @@ ls *.in | wc -l  ##54
 Copy the *.in files to shared google drive.
 Folders stored in `v4` for now.
 
+Dimensions of files:
+```shell
+(master) $ awk '{ print length }' sequences976422-0.5-10.0-1.0.in | head
+1550
+1550
+1550
+1550
+1550
+1550
+1550
+1550
+1550
+1550
+(master) $ wc -l sequences976422-0.5-10.0-1.0.in 
+  400000 sequences976422-0.5-10.0-1.0.in
+```
+
 
 Next steps:
 - simulations for 5 taxa (don't do the one hot encoding)
