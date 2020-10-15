@@ -1554,3 +1554,19 @@ Created file `simulate-n5.jl` and `functions.jl` which is a copy of the function
 with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
 Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
 
+# Onboarding Zelin and Shengwen
+
+Thanks for agreeing to work on this project! We are excited to have you on board.
+
+Next steps:
+1. You will receive an invitation to the slack workspace. I hope to use mostly slack to communicate as a group
+2. You will receive an invitation to the [google drive](https://drive.google.com/drive/u/2/folders/0ACu5ePKXaJaiUk9PVA) where the simulated data is stored
+3. You will receive an invitation to the [github repo](https://github.com/crsl4/nn-phylogenetics) where the scripts are stored. You will have push permissions in the repo, so please make sure to read and adhere to the best computing practices [guidelines](https://github.com/crsl4/mindful-programming/blob/master/lecture.md)
+4. Fill out this form: https://www.when2meet.com/?10101364-VKPxm to identify a time that will work regularly to meet as a group. I chose next week as the week in the poll, but chose times that work for you every week of the semester. We can decide if we start next week or in two weeks. We also need to decide if we want to meet every week or every two weeks. Personally, I prefer every two weeks this semester, but we can discuss later (we can do this discussion in slack)
+5. Check out the project plan (with list of main papers) in the github repo. Also, expect an email from Leo with more info about the code
+6. You will receive an invitation to the [Paperpile folder](https://paperpile.com/app/shared/2qGDFH) where we keep track of the papers for this project
+
+After this email, I hope we can keep communicating via slack where I will also post this same message and we can discuss on the frequency of regular meetings.
+
+Thanks,
+Claudia
