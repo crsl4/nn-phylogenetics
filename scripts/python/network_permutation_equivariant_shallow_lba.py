@@ -8,6 +8,9 @@ import itertools
 import json
 import sys
 
+from modules import _ResidueModule
+from modules import _ResidueModuleDense
+
 nameScript = sys.argv[0].split('/')[-1]
 
 # we are going to give all the arguments using a Json file
@@ -26,15 +29,18 @@ lr = dataJson["lr"]                      # learning rate
 batch_size = dataJson["batchSize"]       # batch size
 
 dataRoot = dataJson["dataRoot"]          # data folder
-modelRoot = dataJson["modelRoot"]   
+modelRoot = dataJson["modelRoot"]        # folder to save the data
 
 labelFile = dataJson["labelFile"]        # file with labels
 matFile = dataJson["matFile"]            # file with sequences
 
-nTrainSamples = dataJson["nTrainSamples"]
-nTestSamples = dataJson["nTestSamples"]
+n_train_samples = dataJson["nTrainSamples"]
+n_test_samples = dataJson["nTestSamples"]
 
-nEpochs  = dataJson["nEpochs"]
+nEpochs  = dataJson["nEpochs"]           # number of epochs
+
+# summary_file = dataJson["summaryFile"]   # file in which we 
+                                         # summarize the end result
 
 print("=================================================\n")
 
@@ -43,7 +49,7 @@ print("Batch Size {} \n".format(batch_size))
 
 print("=================================================")
 
-print("Loading Squence Data in " + matFile, flush = True)
+print("Loading Sequence Data in " + matFile, flush = True)
 print("Loading Label Data in " + labelFile, flush = True)
 
 
@@ -60,63 +66,21 @@ mats = mats.reshape((1550, nSamples, -1))
 mats = np.transpose(mats, (1, 2, 0))
 # dims of mats is (Nsamples, NChannels, Nsequence)
 
-print("Number of samples: {}".format(labels.shape[0]))
+print("Total number of samples: {}".format(labels.shape[0]))
+print("Number of training samples: {}".format(n_train_samples))
+print("Number of testing samples: {}".format(n_test_samples))
 
-assert nTrainSamples + nTestSamples <=  nSamples
+assert n_train_samples + n_test_samples <=  nSamples
 
-outputTrain = torch.tensor(labels[0:nTrainSamples])
-inputTrain  = torch.Tensor(mats[0:nTrainSamples, :, :])
+outputTrain = torch.tensor(labels[0:n_train_samples])
+inputTrain  = torch.Tensor(mats[0:n_train_samples, :, :])
 
 datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 
-outputTest = torch.tensor(labels[-nTestSamples:-1])
-inputTest  = torch.Tensor(mats[-nTestSamples:-1, :, :])
+outputTest = torch.tensor(labels[-n_test_samples:-1])
+inputTest  = torch.Tensor(mats[-n_test_samples:-1, :, :])
 
 datasetTest = data.TensorDataset(inputTest, outputTest) 
-
-
-class _ResidueModule(torch.nn.Module):
-
-    def __init__(self, channel_count):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-        )
-
-    def forward(self, x):
-        return x + self.layers(x)
-
-
-class _ResidueModuleDense(torch.nn.Module):
-
-    def __init__(self, size_in, size_out):
-        super().__init__()
-        self.size_in = size_in
-        self.size_out = size_out
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(size_in, size_out),
-            torch.nn.BatchNorm1d(size_out),
-            torch.nn.ReLU(),
-            torch.nn.Linear(size_out, size_out),
-            torch.nn.BatchNorm1d(size_out),
-            torch.nn.ReLU(),
-        )
-
-    def forward(self, x):
-        if self.size_out == self.size_in :
-            return x + self.layers(x)
-        elif self.size_out ==  self.size_in/2:
-            return  0.5*torch.sum(x.view(x.size()[0],-1,2), 2) + \
-                    self.layers(x)
-        else:    
-            return self.layers(x)
-        # TODO: add 
-
 
 class _DescriptorModule(torch.nn.Module):
 
@@ -240,6 +204,7 @@ dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                              batch_size=batch_size,
+                                             num_workers=4,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -332,3 +297,7 @@ torch.save(model.state_dict(), modelRoot + "/" +
                                                             nameJson.split(".")[0],
                                                             str(lr), 
                                                             str(batch_size)))
+
+
+## testing and saving data to centralized file 
+
