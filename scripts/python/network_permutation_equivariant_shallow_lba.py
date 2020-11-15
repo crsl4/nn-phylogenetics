@@ -7,6 +7,7 @@ from torch.utils import data
 import itertools
 import json
 import sys
+from os import path
 
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
@@ -31,16 +32,22 @@ batch_size = dataJson["batchSize"]       # batch size
 dataRoot = dataJson["dataRoot"]          # data folder
 modelRoot = dataJson["modelRoot"]        # folder to save the data
 
-labelFile = dataJson["labelFile"]        # file with labels
-matFile = dataJson["matFile"]            # file with sequences
+label_file = dataJson["labelFile"]        # file with labels
+mat_file = dataJson["matFile"]            # file with sequences
 
 n_train_samples = dataJson["nTrainSamples"]
 n_test_samples = dataJson["nTestSamples"]
 
 nEpochs  = dataJson["nEpochs"]           # number of epochs
 
-# summary_file = dataJson["summaryFile"]   # file in which we 
-                                         # summarize the end result
+gamma = dataJson["gamma"]               # decrease for the lr scheduler
+lr_steps = dataJson["lrSteps"]          # number of steps for the scheduler
+
+if "summaryFile" in dataJson:
+    summary_file = dataJson["summaryFile"]   # file in which we 
+                                             # summarize the end result
+else :
+    summary_file = "summary_file.txt"
 
 print("=================================================\n")
 
@@ -49,15 +56,15 @@ print("Batch Size {} \n".format(batch_size))
 
 print("=================================================")
 
-print("Loading Sequence Data in " + matFile, flush = True)
-print("Loading Label Data in " + labelFile, flush = True)
+print("Loading Sequence Data in " + mat_file, flush = True)
+print("Loading Label Data in " + label_file, flush = True)
 
 
-labelsh5 = h5py.File(dataRoot+"/"+labelFile, 'r')
+labelsh5 = h5py.File(dataRoot+"/"+label_file, 'r')
 labels = labelsh5['labels'][:].astype(np.int64)-1 
 # classes from 0 to C-1
     
-matsh5 = h5py.File(dataRoot+"/"+matFile, 'r')
+matsh5 = h5py.File(dataRoot+"/"+mat_file, 'r')
 mats = matsh5['matrices'][:]
 
 nSamples = labels.shape[0]
@@ -223,6 +230,9 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+# specidy scheduler
+exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                             step_size=10, gamma=0.9)
 
 # model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
@@ -253,15 +263,19 @@ for epoch in range(1, nEpochs+1):
         optimizer.step()
         # update running training loss
         train_loss += loss.item()
-            
+
     # print avg training statistics 
     train_loss = train_loss/len(dataloaderTrain)
-    print('Epoch: {} \tTraining Loss: {:.6f}'.format(
+    print('Epoch: {} \tLearning rate: {:.6f} \tTraining Loss: {:.6f}'.format(
         epoch, 
+        optimizer.param_groups[0]['lr'],
         train_loss
         ), flush=True)
 
-    # we compute the test loss every 10 epochs 
+    # advance the step in the scheduler
+    exp_lr_scheduler.step() 
+
+    # we compute the test accuracy every 10 epochs 
     if epoch % 10 == 0 :
 
         model.eval()
@@ -298,6 +312,22 @@ torch.save(model.state_dict(), modelRoot + "/" +
                                                             str(lr), 
                                                             str(batch_size)))
 
+if not path.exists("guru99.txt"):
+    with open(summary_file, 'w') as f:
+        f.write("{} \t {} \t {} \t {} \t {}".format("Script name",
+                                    " Json file",
+                                    "lerning rate", 
+                                    "batch size", 
+                                    "max testing accuracy", 
+                                    "train loss"))
 
+# we write the last data to a file
+with open(summary_file, 'w') as f:
+    f.write("{} \t {} \t {} \t {} \t {}".format(nameScript.split(".")[0],
+                                    nameJson.split(".")[0],
+                                    str(lr), 
+                                    str(batch_size), 
+                                    str(maxAccuracy), 
+                                    str(train_loss)))
 ## testing and saving data to centralized file 
 
