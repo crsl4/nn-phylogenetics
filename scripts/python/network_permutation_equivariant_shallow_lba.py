@@ -322,7 +322,7 @@ if not path.exists("guru99.txt"):
                                     "train loss"))
 
 # we write the last data to a file
-with open(summary_file, 'w') as f:
+with open(summary_file, 'a') as f:
     f.write("{} \t {} \t {} \t {} \t {}".format(nameScript.split(".")[0],
                                     nameJson.split(".")[0],
                                     str(lr), 
