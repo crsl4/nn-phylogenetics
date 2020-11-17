@@ -312,9 +312,9 @@ torch.save(model.state_dict(), modelRoot + "/" +
                                                             str(lr), 
                                                             str(batch_size)))
 
-if not path.exists("guru99.txt"):
+if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
-        f.write("{} \t {} \t {} \t {} \t {}".format("Script name",
+        f.write("{} \t {} \t {} \t {} \t {} \n".format("Script name",
                                     " Json file",
                                     "lerning rate", 
                                     "batch size", 
@@ -323,7 +323,7 @@ if not path.exists("guru99.txt"):
 
 # we write the last data to a file
 with open(summary_file, 'a') as f:
-    f.write("{} \t {} \t {} \t {} \t {}".format(nameScript.split(".")[0],
+    f.write("{} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
                                     nameJson.split(".")[0],
                                     str(lr), 
                                     str(batch_size), 
