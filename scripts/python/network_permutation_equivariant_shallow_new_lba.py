@@ -127,16 +127,8 @@ print("Number of testing samples: {}".format(n_test_samples))
 
 assert n_train_samples + n_test_samples <=  n_samples
 
-outputTrain = torch.from_numpy(labels[0:n_train_samples])
-inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
-
-datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
-
-outputTest = torch.from_numpy(labels[-n_test_samples:-1])
-inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
-
-datasetTest = data.TensorDataset(inputTest, outputTest) 
-
+# We define our custom Sequence DataSet, which provides the 
+# the one-hot encoding on the fly.
 class SequenceDataSet(torch.utils.data.Dataset):
     """Face Landmarks dataset."""
 
@@ -171,6 +163,16 @@ class SequenceDataSet(torch.utils.data.Dataset):
 
         return sample
 
+
+outputTrain = torch.from_numpy(labels[0:n_train_samples])
+inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
+
+datasetTrain = data.SequenceDataSet(inputTrain, outputTrain) 
+
+outputTest = torch.from_numpy(labels[-n_test_samples:-1])
+inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
+
+datasetTest = data.SequenceDataSet(inputTest, outputTest) 
 
 
 
