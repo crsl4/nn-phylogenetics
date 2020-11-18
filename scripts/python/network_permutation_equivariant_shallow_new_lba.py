@@ -60,58 +60,117 @@ print("Loading Sequence Data in " + mat_file, flush = True)
 print("Loading Label Data in " + label_file, flush = True)
 
 
-labelsh5 = h5py.File(dataRoot+"/"+label_file, 'r')
-labels = labelsh5['labels'][:].astype(np.int64)-1 
-# classes from 0 to C-1
-    
-matsh5 = h5py.File(dataRoot+"/"+mat_file, 'r')
-mats = matsh5['matrices'][:]
+# we read the labels as list of strings
+with open(dataRoot+"/"+label_file, 'r') as f: 
+    label_char = f.readlines() 
 
-nSamples = labels.shape[0]
+# we read the sequence as a list of strings
+with open(dataRoot+"/"+mat_file, 'r') as f: 
+    seq_string = f.readlines() 
 
-mats = mats.reshape((1550, nSamples, -1))    
-mats = np.transpose(mats, (1, 2, 0))
-# dims of mats is (Nsamples, NChannels, Nsequence)
+# extracting the number of samples
+n_samples = len(label_char)
+
+# extracting the sequence lenght
+seq_lenght = len(seq_string[0])-1
+# note: each element has a '\n' character at the end
+
+# function to convert string to numbers 
+def convert_string_to_numbers(str, dict):
+    ''' str: is the string to convert, 
+        dict: dictionary with the relative ordering of each char'''
+
+    # create a map iterator using a lambda function
+    numbers = map(lambda x: dict[x], str)
+
+    return np.fromiter(numbers, dtype=np.int)
+
+# We need to extract the dictionary with the relative positions
+# fo each aminoacid
+
+# first we need to extract all the different chars 
+strL = "" 
+for c in seq_string[0][:-1]: 
+    if not c in strL: 
+        strL += c
+
+# we sort them 
+strL = sorted(strL)
+
+# we give them a relative order
+dict_amino = {}
+for ii, c in enumerate(strL):
+    dict_amino[c] = ii 
+
+# looping over the labels and create array
+# here each element of the label_char has 
+# the form "1\n", so we only take the first one
+labels = np.fromiter(map(lambda x: int(x[0])-1, 
+                         label_char), dtype=np.int)
+
+mats = np.zeros((len(seq_string), seq_lenght), dtype = np.int)
+
+
+# this is pretty slow (optimize in numba)
+for ii, seq in enumerate(seq_string):
+    # note each line has a \n character at the end so we remove it
+    mats[ii,:] = convert_string_to_numbers(seq[:-1], dict_amino).reshape((1,seq_lenght))
+
+
+mats = mats.reshape((n_samples, -1, seq_lenght))    
+# mats = np.transpose(mats, (0, 2, 1))
+# dims of mats is (N_samples, n_sequences, seq_length)
 
 print("Total number of samples: {}".format(labels.shape[0]))
 print("Number of training samples: {}".format(n_train_samples))
 print("Number of testing samples: {}".format(n_test_samples))
 
-assert n_train_samples + n_test_samples <=  nSamples
+assert n_train_samples + n_test_samples <=  n_samples
 
-outputTrain = torch.tensor(labels[0:n_train_samples])
-inputTrain  = torch.Tensor(mats[0:n_train_samples, :, :])
+outputTrain = torch.from_numpy(labels[0:n_train_samples])
+inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
 
 datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 
-outputTest = torch.tensor(labels[-n_test_samples:-1])
-inputTest  = torch.Tensor(mats[-n_test_samples:-1, :, :])
+outputTest = torch.from_numpy(labels[-n_test_samples:-1])
+inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 
 datasetTest = data.TensorDataset(inputTest, outputTest) 
 
+class SequenceDataSet(torch.utils.data.Dataset):
+    """Face Landmarks dataset."""
 
+    def __init__(self, sequences, labels, n_char = 20, transform=None):
+        """
+        Args:  sequences: pytorch tensor with the sequences
+               labels:    pytorch tensor with the labels
+        """
+        self.sequences = sequences
+        self.labels = labels
+        # number of characters
+        self.n_char = n_char
 
-# defining hte one-hot encoding this supposes that 
-# arr contains numbers. 
-def one_hot_encode(arr, n_labels):
-    
-    # Initialize the the encoded array
-    one_hot = np.zeros((arr.size, n_labels), dtype=np.float32)
-    one_hot[np.arange(one_hot.shape[0]), arr.flatten()] = 1.
-    
-    one_hot = one_hot.reshape((*arr.shape, n_labels))
-    						  # * is for unpacking the dimensions
-    return one_hot
+    def __len__(self):
+        return self.labels.shape[0]
 
-# function to convert string to numbers 
-def convert_string_to_numbers(str, first):
-	''' str: is the string to convert, 
-		first: is the char considered to the Zero'''
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
 
-	# create a map iterator using a lambda function
-	numbers = map(lambda x: ord(x)-ord(first), str)
+        sequence_out = self.sequences[idx,:,:]
+        label = self.labels[idx]
+        seq_stack = []
 
-	return np.fromiter(numbers, dtype=np.int)
+        for ii in range(4):
+            seq_stack.append(torch.nn.functional.one_hot(sequence_out[ii,:], 
+                                                      self.n_char))
+
+        seq_stack = torch.stack(seq_stack, dim=0)
+
+        sample = (seq_stack, label)
+
+        return sample
+
 
 
 
@@ -132,6 +191,8 @@ class _DescriptorModule(torch.nn.Module):
 
     def forward(self, x):
         return self.layers(x)
+
+
 
 
 class _MergeModule(torch.nn.Module):
@@ -256,7 +317,7 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-# specidy scheduler
+# specify scheduler
 exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                              step_size=10, gamma=0.9)
 
