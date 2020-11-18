@@ -154,8 +154,12 @@ class SequenceDataSet(torch.utils.data.Dataset):
         seq_stack = []
 
         for ii in range(4):
-            seq_stack.append(torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char))
+            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
+                                                      self.n_char)
+            # we need to transpose it. Perhaps is better to 
+            # transpose everything at the end.
+            temp = torch.transpose(temp, 0, 1)
+            seq_stack.append(temp)
 
         seq_stack = torch.stack(seq_stack, dim=0)
 
@@ -164,16 +168,16 @@ class SequenceDataSet(torch.utils.data.Dataset):
         return sample
 
 
+# we perform the training/validation splitting
 outputTrain = torch.from_numpy(labels[0:n_train_samples])
 inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
 
-datasetTrain = data.SequenceDataSet(inputTrain, outputTrain) 
+datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
 
 outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 
-datasetTest = data.SequenceDataSet(inputTest, outputTest) 
-
+datasetTest = SequenceDataSet(inputTest, outputTest) 
 
 
 class _DescriptorModule(torch.nn.Module):
@@ -295,12 +299,12 @@ class _PermutationModule(torch.nn.Module):
 dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=4,
+                                              num_workers=8,
                                               pin_memory=True )
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                              batch_size=batch_size,
-                                             num_workers=4,
+                                             num_workers=8,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -339,7 +343,7 @@ for epoch in range(1, nEpochs+1):
     ###################
     for genes, quartets_batch in dataloaderTrain:
         #send to the device (either cpu or gpu)
-        genes, quartets_batch = genes.to(device), quartets_batch.to(device)
+        genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
         # forward pass: compute predicted outputs by passing inputs to the model
@@ -372,7 +376,7 @@ for epoch in range(1, nEpochs+1):
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
-            genes, quartets_batch = genes.to(device), quartets_batch.to(device)
+            genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             quartetsNN = model(genes)
             # calculate the loss

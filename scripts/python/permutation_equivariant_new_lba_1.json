@@ -8,7 +8,7 @@
     "dataRoot":          "../../data/new-lba/",
     "labelFile":         "labels113683228-0.1-10.0-0.01.in",
     "matFile":           "sequences113683228-0.1-10.0-0.01.in",
-    "nTrainSamples":      99500,
+    "nTrainSamples":      9500,
     "nTestSamples":       500,
     "_comment":         "that's all",
     "nEpochs":           100, 
