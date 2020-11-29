@@ -118,7 +118,6 @@ for ii, seq in enumerate(seq_string):
 
 
 mats = mats.reshape((n_samples, -1, seq_lenght))    
-# mats = np.transpose(mats, (0, 2, 1))
 # dims of mats is (N_samples, n_sequences, seq_length)
 
 print("Total number of samples: {}".format(labels.shape[0]))
