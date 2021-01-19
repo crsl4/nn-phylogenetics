@@ -1,0 +1,17 @@
+{
+    "with_distrib":     false,
+    "_comment":         " model parameters",
+    "ngpu":              0,
+    "lr":                0.01,
+    "batchSize":         128, 
+    "modelRoot":         "",
+    "dataRoot":          "",
+    "labelFile":         "labels-lba-1.h5",
+    "matFile":           "matrices-lba-1.h5",
+    "nTrainSamples":      7500,
+    "nTestSamples":       500,
+    "_comment":         "that's all",
+    "nEpochs":           100, 
+    "gamma":             0.98,
+    "lrSteps":           10    
+}
