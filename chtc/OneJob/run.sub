@@ -1,0 +1,26 @@
+
+#This file run with "condor_submit run.sub"
+# directories log, error, and output must exist.
+
+universe = vanilla
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./run.sh
+
+arguments = lba_1.json > test112801.out &
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files =  modules.py, network_lba.py, lba_1.json,  http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz, packages.tar.gz
+#Require execute servers that can access /staging
+Requirements = (Target.HasCHTCStaging == true)
+
+request_cpus = 1
+request_memory = 48GB
+request_disk = 32GB
+
+queue
+
+
