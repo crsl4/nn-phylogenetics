@@ -227,6 +227,7 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
     def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
         super().__init__()
         
+        self.chnl_dim = chnl_dim
         self.num_levels = np.int(np.floor(np.log2((input_dim)/emb_dim)))
 
         blocks = []
@@ -243,7 +244,7 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
         x = self.seq(x)
 
         # return as a 1D vector 
-        return x.view(x.shape[0], chnl_dim, -1)
+        return x.view(x.shape[0], self.chnl_dim, -1)
 
 
 class _NonLinearMergeConv(torch.nn.Module):
