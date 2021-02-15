@@ -17,7 +17,7 @@ from os import path
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
 
-from modules import _NonLinearScoreEmbed
+from modules import _NonLinearScore
 from modules import _NonLinearMergeEmbed
 from modules import _NonLinearEmbedding
 
@@ -178,7 +178,7 @@ D  = _NonLinearEmbedding(1550, 20, 10, 128)
 # non-linear merge is just a bunch of dense ResNets 
 M1 = _NonLinearMergeEmbed(128, 128, 6)
 
-M2 = _NonLinearScoreEmbed(128, 128, 3)
+M2 = _NonLinearScore(128, 128, 3)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
