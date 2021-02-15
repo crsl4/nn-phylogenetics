@@ -17,6 +17,8 @@ from os import path
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
 
+from modules import _NonLinearScoreEmbed
+from modules import _NonLinearMergeEmbed
 from modules import _NonLinearEmbedding
 
 nameScript = sys.argv[0].split('/')[-1]
@@ -172,11 +174,11 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 
 # defining the models
 # this is harwired for now
-D  = _NonLinearEmbedding(1550, 20, 10, 128)
+D  = _NonLinearEmbedding(1550, 20, 10, 32)
 # non-linear merge is just a bunch of dense ResNets 
-M1 = _NonLinearMergeEmbed(128, 128, 6)
+M1 = _NonLinearMergeEmbed(32, 32, 6)
 
-M2 = _NonLinearMergeEmbed(128, 128, 3)
+M2 = _NonLinearMergeEmbed(32, 32, 3)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
