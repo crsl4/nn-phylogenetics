@@ -84,68 +84,120 @@ class _NonLinearEmbedding(torch.nn.Module):
 
 
         self.dense = _ResidueModuleDense(dims*chnl_dim,emb_dim)
+        self.dense2 = _ResidueModuleDense(emb_dim,emb_dim)
 
     def forward(self, x):
 
         x = self.seq(x)
         x = x.view(x.shape[0], -1)
         x = self.dense(x)
+        x = self.dense2(x)
 
-        return x.view(x.shape[0], 1, -1)
+        # return as a 1D vector 
+        return x.view(x.shape[0], -1)
+
+
+class _NonLinearMerge(torch.nn.Module):
+
+    def __init__(self, emb_dim, depth):
+        super().__init__()
+        
+        blocks = []
+        for ii in range(depth):
+            blocks.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+        self.layers = nn.Sequential(*blocks)
+
+
+    def forward(self, x):
+        return self.layers(x)
+
+
+class _NonLinearMergeEmbed(torch.nn.Module):
+
+    def __init__(self, emb_dim, mid_dim, depth):
+        super().__init__()
+        
+        self.dense1 = torch.nn.Linear(emb_dim, mid_dim)
+
+        blocks_mid = []
+        for ii in range(depth//2):
+            blocks_mid.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+        self.layers_mid = nn.Sequential(*blocks_mid)
+
+        blocks_embed = []
+        for ii in range(depth//2):
+            blocks_embed.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+        self.layers_embed = nn.Sequential(*blocks_embed)
+
+        self.dense2 = torch.nn.Linear(mid_dim, emb_dim)
+
+
+    def forward(self, x, y):
+        # applying the \Phi
+        x = self.layers_mid(self.dense1(x))
+        y = self.layers_mid(self.dense1(y))
+
+        z = torch.add(x,y)
+
+        return self.dense2(self.layers_embed(z))
+
+
+class _NonLinearScoreEmbed(torch.nn.Module):
+
+    def __init__(self, emb_dim, mid_dim, depth):
+        super().__init__()
+        
+        self.dense1 = torch.nn.Linear(emb_dim, mid_dim)
+
+        blocks_mid = []
+        for ii in range(depth):
+            blocks_mid.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+        self.layers_mid = nn.Sequential(*blocks_mid)
+
+        blocks_score = []
+
+        self.levels = np.int(np.log2(emb_dim))-1
+
+        for ii in range(self.levels):
+            in_dim = emb_dim//(2**ii)
+            out_dim = emb_dim//(2**(ii+1))
+            blocks_score.append(_ResidueModuleDense(in_dim,out_dim))
+        
+        self.layers_score = nn.Sequential(*blocks_score)
+
+        self.dense2 = torch.nn.Linear(emb_dim//(2**(self.levels)), 1)
+
+
+    def forward(self, x, y):
+        # applying the \Phi
+        x = self.layers_mid(self.dense1(x))
+        y = self.layers_mid(self.dense1(y))
+
+        z = torch.add(x,y)
+
+        return self.dense2(self.layers_score(z))
 
 ## We suppose that the 
 
+class _NonLinearScore(torch.nn.Module):
 
-class _NonLinearEmbedding(torch.nn.Module):
-    '''One-dimensional convolutional residual
-    we only provide the channel count
-    the stride and the filter width are fixed to zero.
-    In particular here we just have channel mixing '''
-
-    def __init__(self, dim_embedding, depth):
+    def __init__(self, emb_dim):
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-        )
+        
+        levels = np.int(np.log2(emb_dim))
+        blocks = []
+        for ii in range(depth):
+            blocks.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+        self.layers = nn.Sequential(*blocks)
+
 
     def forward(self, x):
-        return x + self.layers(x)
-
-class _NonLinearMerge(torch.nn.Module):
-    '''One-dimensional convolutional residual
-    we only provide the channel count
-    the stride and the filter width are fixed to zero.
-    In particular here we just have channel mixing '''
-
-    def __init__(self, dim_embedding):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(channel_count, channel_count, 1),
-            torch.nn.BatchNorm1d(channel_count),
-            torch.nn.ReLU(),
-        )
-
-    def forward(self, x):
-        # split the data in two
-        # apply the local decoder for each of the entries
-
-
-        # add the results 
-
-
-        # apply the new local decode
-
-
-        return x + self.layers(x)
-
+        return self.layers(x)
 
 # a couple of ideas for the merge module. 
 

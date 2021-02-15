@@ -1,3 +1,8 @@
+# Script containing the modular version of the code
+# so far we have only implemented the non_linear_embedding layer
+# for simplicity we can just use dense layers for the merge operations
+
+
 import numpy as np 
 # import matplotlib.pyplot as plt
 import torch
@@ -93,69 +98,6 @@ datasetTest = data.TensorDataset(inputTest, outputTest)
 
 # module to "compress" the data in to a set of descriptors
 
-class _DescriptorModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),     # 1550
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 675
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 337
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 170
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 85
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 43
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 21
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 10
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),     # 5
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
-class _MergeModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-        )
-
-    def forward(self, x):
-        # x  x.view(x.size()[0], 60)
-        return  self.layers(x)
-
-
-class _MergeModule2(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AdaptiveAvgPool1d(1),
-        )
-        self.classifier = torch.nn.Linear(20, 1)
-    def forward(self, x):
-        y = self.layers(x).squeeze(dim=2)
-        return self.classifier(y)
-
-
 
 class _PermutationModule(torch.nn.Module):
 
@@ -179,34 +121,33 @@ class _PermutationModule(torch.nn.Module):
         # we compute by hand the different paths
 
         # Quartet 1 (12|34)
-        d01 = d0 + d1
-        F1 = self._MergeModuleLv1(d01)
+        # d01 = d0 + d1
+        d01 = self._MergeModuleLv1(d0, d1)
 
-        d23 = d2 + d3
-        F2 = self._MergeModuleLv1(d23)
+        # d23 = d2 + d3
+        d23 = self._MergeModuleLv1(d2, d3)
 
-        F12 = F1 + F2
-        G1 = self._MergeModuleLv2(F12)
+        G1 = self._MergeModuleLv2(d01, d23)
 
         #Quartet 2 (13|24)
-        d02 = d0 + d2
-        F6 = self._MergeModuleLv1(d02)
+        # d02 = d0 + d2
+        d02 = self._MergeModuleLv1(d0, d2)
 
-        d13 = d1 + d3
-        F5 = self._MergeModuleLv1(d13)
+        # d13 = d1 + d3
+        d13 = self._MergeModuleLv1(d1, d3)
 
-        F56 = F5 + F6
-        G2 = self._MergeModuleLv2(F56)
+        # F56 = F5 + F6
+        G2 = self._MergeModuleLv2(d02, d13)
 
         # Quartet 3 (14|23)
-        d03 = d0 + d3
-        F3 = self._MergeModuleLv1(d03)
+        # d03 = d0 + d3
+        d03 = self._MergeModuleLv1(d0, d3)
 
-        d12 = d1 + d2
-        F4 = self._MergeModuleLv1(d12)
+        # d12 = d1 + d2
+        d12 = self._MergeModuleLv1(d1, d2)
 
-        F34 = F3 + F4
-        G3 = self._MergeModuleLv2(F34)
+        # F34 = F3 + F4
+        G3 = self._MergeModuleLv2(d03, d12)
 
 
         # putting all the quartest together
@@ -230,9 +171,12 @@ dataloaderTest = torch.utils.data.DataLoader(datasetTest,
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 # defining the models
-D  = _DescriptorModule()
-M1 = _MergeModule()
-M2 = _MergeModule2()
+# this is harwired for now
+D  = _NonLinearEmbedding(1550, 20, 10, 128)
+# non-linear merge is just a bunch of dense ResNets 
+M1 = _NonLinearMergeEmbed(128, 128, 6)
+
+M2 = _NonLinearMergeEmbed(128, 128, 3)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
