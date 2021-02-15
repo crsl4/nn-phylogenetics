@@ -331,7 +331,7 @@ for epoch in range(1, nEpochs+1):
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
-            genes, quartets_batch = genes.to(device), quartets_batch.to(device)
+            genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             quartetsNN = model(genes)
             # calculate the loss
