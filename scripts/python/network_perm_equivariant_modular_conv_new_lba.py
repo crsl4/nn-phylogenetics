@@ -1,3 +1,8 @@
+# Script containing the modular version of the code
+# so far we have only implemented the non_linear_embedding layer
+# for simplicity we can just use dense layers for the merge operations
+
+
 import numpy as np 
 # import matplotlib.pyplot as plt
 import torch
@@ -11,6 +16,10 @@ from os import path
 
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
+
+from modules import _NonLinearScoreConv
+from modules import _NonLinearMergeConv
+from modules import _NonLinearEmbeddingConv
 
 nameScript = sys.argv[0].split('/')[-1]
 
@@ -179,62 +188,6 @@ inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 datasetTest = SequenceDataSet(inputTest, outputTest) 
 
 
-class _DescriptorModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
-
-class _MergeModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-        )
-
-    def forward(self, x):
-        # x  x.view(x.size()[0], 60)
-        return  self.layers(x)
-
-
-class _MergeModule2(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AdaptiveAvgPool1d(1),
-        )
-        self.classifier = torch.nn.Linear(20, 1)
-    def forward(self, x):
-        y = self.layers(x).squeeze(dim=2)
-        return self.classifier(y)
-
-
-
 class _PermutationModule(torch.nn.Module):
 
     def __init__(self, descriptorModule, 
@@ -257,35 +210,33 @@ class _PermutationModule(torch.nn.Module):
         # we compute by hand the different paths
 
         # Quartet 1 (12|34)
-        d01 = d0 + d1
-        F1 = self._MergeModuleLv1(d01)
+        # d01 = d0 + d1
+        d01 = self._MergeModuleLv1(d0, d1)
 
-        d23 = d2 + d3
-        F2 = self._MergeModuleLv1(d23)
+        # d23 = d2 + d3
+        d23 = self._MergeModuleLv1(d2, d3)
 
-        F12 = F1 + F2
-        G1 = self._MergeModuleLv2(F12)
+        G1 = self._MergeModuleLv2(d01, d23)
 
         #Quartet 2 (13|24)
-        d02 = d0 + d2
-        F6 = self._MergeModuleLv1(d02)
+        # d02 = d0 + d2
+        d02 = self._MergeModuleLv1(d0, d2)
 
-        d13 = d1 + d3
-        F5 = self._MergeModuleLv1(d13)
+        # d13 = d1 + d3
+        d13 = self._MergeModuleLv1(d1, d3)
 
-        F56 = F5 + F6
-        G2 = self._MergeModuleLv2(F56)
+        # F56 = F5 + F6
+        G2 = self._MergeModuleLv2(d02, d13)
 
         # Quartet 3 (14|23)
-        d03 = d0 + d3
-        F3 = self._MergeModuleLv1(d03)
+        # d03 = d0 + d3
+        d03 = self._MergeModuleLv1(d0, d3)
 
-        d12 = d1 + d2
-        F4 = self._MergeModuleLv1(d12)
+        # d12 = d1 + d2
+        d12 = self._MergeModuleLv1(d1, d2)
 
-        F34 = F3 + F4
-        G3 = self._MergeModuleLv2(F34)
-
+        # F34 = F3 + F4
+        G3 = self._MergeModuleLv2(d03, d12)
 
         # putting all the quartest together
         G = torch.cat([G1, G2, G3], -1) # concatenation at the end
@@ -308,9 +259,15 @@ dataloaderTest = torch.utils.data.DataLoader(datasetTest,
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 # defining the models
-D  = _DescriptorModule()
-M1 = _MergeModule()
-M2 = _MergeModule2()
+# this is harwired for now
+chnl_dim = 20
+embd_dim = 32
+
+D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim)
+# non-linear merge is just a bunch of dense ResNets 
+M1 = _NonLinearMergeConv(chnl_dim, 3, 6)
+
+M2 = _NonLinearScoreConv(chnl_dim, 3, 6)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
@@ -321,9 +278,9 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-# specify scheduler
+# specidy scheduler
 exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                             step_size=10, gamma=0.9)
+                                             step_size=lr_steps, gamma=gamma)
 
 # model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
@@ -341,7 +298,7 @@ for epoch in range(1, nEpochs+1):
     ###################
     for genes, quartets_batch in dataloaderTrain:
         #send to the device (either cpu or gpu)
-        genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
+        genes, quartets_batch = genes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
         # forward pass: compute predicted outputs by passing inputs to the model
@@ -374,7 +331,7 @@ for epoch in range(1, nEpochs+1):
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
-            genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
+            genes, quartets_batch = genes.to(device), quartets_batch.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             quartetsNN = model(genes)
             # calculate the loss

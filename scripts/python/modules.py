@@ -235,6 +235,7 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
         blocks.append(torch.nn.BatchNorm1d(chnl_dim)) 
         for ii in range(self.num_levels):
             blocks.append(_ResidueModule(chnl_dim))
+            blocks.append(_ResidueModule(chnl_dim))
             blocks.append(torch.nn.AvgPool1d(2))
         
         self.seq = nn.Sequential(*blocks)
