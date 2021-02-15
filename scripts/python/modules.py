@@ -185,7 +185,7 @@ class _NonLinearScoreEmbed(torch.nn.Module):
 
 class _NonLinearScore(torch.nn.Module):
 
-    def __init__(self, emb_dim):
+    def __init__(self, emb_dim, depth):
         super().__init__()
         
         levels = np.int(np.log2(emb_dim))
@@ -195,10 +195,15 @@ class _NonLinearScore(torch.nn.Module):
         
         self.layers = nn.Sequential(*blocks)
 
+        self.score = torch.nn.Linear(emb_dim, 1, bias = False)
 
-    def forward(self, x):
-        return self.layers(x)
+    def forward(self, x, y):
+        x = self.layers(x)
+        y = self.layers(y)
 
+        z = torch.add(x,y)
+
+        return self.score(z)
 # a couple of ideas for the merge module. 
 
 
