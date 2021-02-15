@@ -64,6 +64,12 @@ class _ResidueModuleDense(torch.nn.Module):
     # TODO: add
 
 
+
+#################################
+# these are the modules acting on vectors:
+# it seems that there is geometric information that needs to be 
+# be kept
+
 class _NonLinearEmbedding(torch.nn.Module):
 
     def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
@@ -97,6 +103,8 @@ class _NonLinearEmbedding(torch.nn.Module):
         return x.view(x.shape[0], -1)
 
 
+# perhaps we need to use conv nets for merges too. 
+# using dense networks seems to make the problems hard to optimize
 class _NonLinearMerge(torch.nn.Module):
 
     def __init__(self, emb_dim, depth):
@@ -205,6 +213,142 @@ class _NonLinearScore(torch.nn.Module):
 
         return self.score(z)
 # a couple of ideas for the merge module. 
+
+
+############################################################################
+############################################################################
+############################################################################
+# here are the version of the modules that keep the geometric information 
+# inside each sequence
+
+
+class _NonLinearEmbeddingConv(torch.nn.Module):
+
+    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
+        super().__init__()
+        
+        self.num_levels = np.int(np.floor(np.log2((input_dim)/emb_dim)))
+
+        blocks = []
+        blocks.append(torch.nn.Conv1d(input_channel, chnl_dim, 1))
+        blocks.append(torch.nn.BatchNorm1d(chnl_dim)) 
+        for ii in range(self.num_levels):
+            blocks.append(_ResidueModule(chnl_dim))
+            blocks.append(torch.nn.AvgPool1d(2))
+        
+        self.seq = nn.Sequential(*blocks)
+
+
+    def forward(self, x):
+        x = self.seq(x)
+
+        # return as a 1D vector 
+        return x.view(x.shape[0], chnl_dim, -1)
+
+
+class _NonLinearMergeConv(torch.nn.Module):
+
+    def __init__(self, chnl_dim, kernel_size, depth):
+        super().__init__()
+        
+        blocks_mid = []
+        for ii in range(depth//2):
+            blocks_mid.append(ResNetBlock(chnl_dim, kernel_size, 1))
+        
+        self.layers_mid = nn.Sequential(*blocks_mid)
+
+        blocks_embed = []
+        for ii in range(depth//2):
+            blocks_embed.append(ResNetBlock(chnl_dim, kernel_size, 1))
+        
+        self.layers_embed = nn.Sequential(*blocks_embed)
+
+
+    def forward(self, x, y):
+        # applying the \Phi
+        x = self.layers_mid(x)
+        y = self.layers_mid(y)
+
+        z = torch.add(x,y)
+
+        return self.layers_embed(z)
+
+
+# class _NonLinearScoreEmbed(torch.nn.Module):
+
+#     def __init__(self, emb_dim, mid_dim, depth):
+#         super().__init__()
+        
+#         self.dense1 = torch.nn.Linear(emb_dim, mid_dim)
+
+#         blocks_mid = []
+#         for ii in range(depth):
+#             blocks_mid.append(_ResidueModuleDense(emb_dim,emb_dim))
+        
+#         self.layers_mid = nn.Sequential(*blocks_mid)
+
+#         blocks_score = []
+
+#         self.levels = np.int(np.log2(emb_dim))-1
+
+#         for ii in range(self.levels):
+#             in_dim = emb_dim//(2**ii)
+#             out_dim = emb_dim//(2**(ii+1))
+#             blocks_score.append(_ResidueModuleDense(in_dim,out_dim))
+        
+#         self.layers_score = nn.Sequential(*blocks_score)
+
+#         self.dense2 = torch.nn.Linear(emb_dim//(2**(self.levels)), 1)
+
+
+#     def forward(self, x, y):
+#         # applying the \Phi
+#         x = self.layers_mid(self.dense1(x))
+#         y = self.layers_mid(self.dense1(y))
+
+#         z = torch.add(x,y)
+
+#         return self.dense2(self.layers_score(z))
+
+# ## We suppose that the 
+
+class _NonLinearScoreConv(torch.nn.Module):
+
+    def __init__(self, chnl_dim, kernel_size, depth):
+        super().__init__()
+        
+        blocks_merge = []
+        for ii in range(depth//2):
+            blocks_merge.append(ResNetBlock(chnl_dim, kernel_size, 1))
+        
+        self.layers_merge = nn.Sequential(*blocks_merge)
+
+        blocks_score = []
+        for ii in range(depth//2):
+            blocks_score.append(ResNetBlock(chnl_dim, kernel_size, 1))
+
+        blocks_score.append(torch.nn.AdaptiveAvgPool1d(1))
+        
+        self.layers_score = nn.Sequential(*blocks_score)
+
+        self.score = torch.nn.Linear(chnl_dim, 1, bias = False)
+
+    def forward(self, x, y):
+
+        # first we apply the merge blocks
+        x = self.layers_merge(x)
+        y = self.layers_merge(y)
+
+        # we add the 2 parts together
+        z = torch.add(x,y)
+
+        # we applyt the scoring layers
+        z = self.layers_score(z).squeeze(dim=2)
+
+        return self.score(z)
+# a couple of ideas for the merge module. 
+
+
 
 
 ## here are the ResNet modules used for the Unet
