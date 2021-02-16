@@ -12,7 +12,7 @@ data['nTrainSamples'] = 9500
 data['nTestSamples'] = 500
 data['nEpochs'] = 100
 data['gamma'] = 0.95
-data['lrSteps'] 10 
+data['lrSteps'] = 10 
 
 labels_names = ['labels113683228-0.1-10.0-0.01.in',
 'labels114134-1.0-10.0-1.0.in', 'labels1346243-1.0-10.0-0.01.in',
