@@ -47,7 +47,7 @@ sequence_names =['sequences113683228-0.1-10.0-0.01.in',
 
 for ii in range(len(sequence_names)):
     data['labelFile'] = labels_names[ii]
-    data['matFile'] = labels_names[ii]
+    data['matFile'] = sequence_names[ii]
 
     name = "permutation_equivariant_new_lba_"+str(ii+1)+".json"
 
