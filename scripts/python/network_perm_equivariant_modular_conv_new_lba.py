@@ -52,6 +52,9 @@ nEpochs  = dataJson["nEpochs"]           # number of epochs
 gamma = dataJson["gamma"]               # decrease for the lr scheduler
 lr_steps = dataJson["lrSteps"]          # number of steps for the scheduler
 
+chnl_dim = dataJson["channel_dimension"]
+embd_dim = dataJson["embedding_dimension"]
+
 if "summaryFile" in dataJson:
     summary_file = dataJson["summaryFile"]   # file in which we 
                                              # summarize the end result
@@ -260,8 +263,6 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 
 # defining the models
 # this is harwired for now
-chnl_dim = 20
-embd_dim = 32
 
 D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim)
 # non-linear merge is just a bunch of dense ResNets 
@@ -362,20 +363,26 @@ torch.save(model.state_dict(), modelRoot + "/" +
 
 if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
-        f.write("{} \t {} \t {} \t {} \t {} \n".format("Script name",
+        f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {}\n".format("Script name",
                                     " Json file",
                                     "lerning rate", 
                                     "batch size", 
                                     "max testing accuracy", 
-                                    "train loss"))
+                                    "train loss", 
+                                    "N epoch", 
+                                    "chnl_dim",
+                                    "embd_dim"))
 
 # we write the last data to a file
 with open(summary_file, 'a') as f:
-    f.write("{} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
+    f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
                                     nameJson.split(".")[0],
                                     str(lr), 
                                     str(batch_size), 
                                     str(maxAccuracy), 
-                                    str(train_loss)))
+                                    str(train_loss),
+                                    str(nEpochs), 
+                                    str(chnl_dim),
+                                    str(embd_dim)))
 ## testing and saving data to centralized file 
 
