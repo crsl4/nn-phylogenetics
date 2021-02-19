@@ -1570,3 +1570,18 @@ After this email, I hope we can keep communicating via slack where I will also p
 
 Thanks,
 Claudia
+
+
+# Notes from new Leo code (meeting 2/18)
+
+- Code is for 4 taxa only and it follows more closely the notation on the overleaf doc
+- In the old code, we had `DescriptorModule` as \phi and `MergeModule` as \Phi so that the pipeline would be from a 1550x20x4 tensor to 1550x20 to 250x20 then into MergeModule to 50x20 and then into MergeModule2 to a score
+- The new code had the pipeline of 1550x20 to a vector of 128 to another vector of 128 and then to a score
+       - `NonlinearEmbedding`: \phi
+       - `NonlinearMergeEmbedding`: \Phi
+       - `NonlinearScoreEmbedding`: \Psi
+- This new code does not work and Leo suspects it is because we are losing some of the geometry of the sequence
+- An alternative version goes from 1550x20 to Matrix mxc (via \phi) then to Matrix mxc again (via \Phi) and finally to score via \Psi
+- This new version works better as it seems to keep the geometry of the input
+- The files `gen_json_files.py` and `gen_sh_files.py` provide automatic means for tests on slurm
+- We want to start exploring extension to 5 or 6 taxa for the paper
