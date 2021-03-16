@@ -3,14 +3,15 @@
     "_comment":         " model parameters",
     "ngpu":              1,
     "lr":                0.001,
-    "batchSize":         16, 
-    "modelRoot":         "best_models",
+    "batchSize":         16,     "modelRoot":         "best_models",
     "dataRoot":          "../../data",
     "labelFile":         "labels-1.h5",
     "matFile":           "matrices-1.h5",
     "nTrainSamples":      4500,
     "nTestSamples":       500,
     "_comment":         "that's all",
-    "nEpochs":           1000 
+    "nEpochs":           1000,
+    "gamma":             0.98,
+    "lrSteps":           10    
 }
 

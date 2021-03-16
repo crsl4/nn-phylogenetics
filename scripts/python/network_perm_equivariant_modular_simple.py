@@ -1,3 +1,8 @@
+# Script containing the modular version of the code
+# so far we have only implemented the non_linear_embedding layer
+# for simplicity we can just use dense layers for the merge operations
+
+
 import numpy as np 
 # import matplotlib.pyplot as plt
 import torch
@@ -11,6 +16,10 @@ from os import path
 
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
+
+from modules import _NonLinearScore
+from modules import _NonLinearMergeEmbed
+from modules import _NonLinearEmbedding
 
 nameScript = sys.argv[0].split('/')[-1]
 
@@ -60,179 +69,36 @@ print("Loading Sequence Data in " + mat_file, flush = True)
 print("Loading Label Data in " + label_file, flush = True)
 
 
-# we read the labels as list of strings
-with open(dataRoot+"/"+label_file, 'r') as f: 
-    label_char = f.readlines() 
+labelsh5 = h5py.File(dataRoot+"/"+label_file, 'r')
+labels = labelsh5['labels'][:].astype(np.int64)-1 
+# classes from 0 to C-1
+    
+matsh5 = h5py.File(dataRoot+"/"+mat_file, 'r')
+mats = matsh5['matrices'][:]
 
-# we read the sequence as a list of strings
-with open(dataRoot+"/"+mat_file, 'r') as f: 
-    seq_string = f.readlines() 
+nSamples = labels.shape[0]
 
-# extracting the number of samples
-n_samples = len(label_char)
-
-# extracting the sequence lenght
-seq_lenght = len(seq_string[0])-1
-# note: each element has a '\n' character at the end
-
-# function to convert string to numbers 
-def convert_string_to_numbers(str, dict):
-    ''' str: is the string to convert, 
-        dict: dictionary with the relative ordering of each char'''
-
-    # create a map iterator using a lambda function
-    numbers = map(lambda x: dict[x], str)
-
-    return np.fromiter(numbers, dtype=np.int)
-
-# We need to extract the dictionary with the relative positions
-# fo each aminoacid
-
-# first we need to extract all the different chars 
-strL = "" 
-for c in seq_string[0][:-1]: 
-    if not c in strL: 
-        strL += c
-
-# we sort them 
-strL = sorted(strL)
-
-# we give them a relative order
-dict_amino = {}
-for ii, c in enumerate(strL):
-    dict_amino[c] = ii 
-
-# looping over the labels and create array
-# here each element of the label_char has 
-# the form "1\n", so we only take the first one
-labels = np.fromiter(map(lambda x: int(x[0])-1, 
-                         label_char), dtype=np.int)
-
-mats = np.zeros((len(seq_string), seq_lenght), dtype = np.int)
-
-
-# this is pretty slow (optimize in numba)
-for ii, seq in enumerate(seq_string):
-    # note each line has a \n character at the end so we remove it
-    mats[ii,:] = convert_string_to_numbers(seq[:-1], dict_amino).reshape((1,seq_lenght))
-
-
-mats = mats.reshape((n_samples, -1, seq_lenght))    
-# dims of mats is (N_samples, n_sequences, seq_length)
+mats = mats.reshape((1550, nSamples, -1))    
+mats = np.transpose(mats, (1, 2, 0))
+# dims of mats is (Nsamples, NChannels, Nsequence)
 
 print("Total number of samples: {}".format(labels.shape[0]))
 print("Number of training samples: {}".format(n_train_samples))
 print("Number of testing samples: {}".format(n_test_samples))
 
-assert n_train_samples + n_test_samples <=  n_samples
+assert n_train_samples + n_test_samples <=  nSamples
 
-# We define our custom Sequence DataSet, which provides the 
-# the one-hot encoding on the fly.
-class SequenceDataSet(torch.utils.data.Dataset):
-    """Face Landmarks dataset."""
+outputTrain = torch.tensor(labels[0:n_train_samples])
+inputTrain  = torch.Tensor(mats[0:n_train_samples, :, :])
 
-    def __init__(self, sequences, labels, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        self.labels = labels
-        # number of characters
-        self.n_char = n_char
+datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 
-    def __len__(self):
-        return self.labels.shape[0]
+outputTest = torch.tensor(labels[-n_test_samples:-1])
+inputTest  = torch.Tensor(mats[-n_test_samples:-1, :, :])
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+datasetTest = data.TensorDataset(inputTest, outputTest) 
 
-        sequence_out = self.sequences[idx,:,:]
-        label = self.labels[idx]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, label)
-
-        return sample
-
-
-# we perform the training/validation splitting
-outputTrain = torch.from_numpy(labels[0:n_train_samples])
-inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
-
-datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
-
-outputTest = torch.from_numpy(labels[-n_test_samples:-1])
-inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
-
-datasetTest = SequenceDataSet(inputTest, outputTest) 
-
-
-class _DescriptorModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
-
-class _MergeModule(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AvgPool1d(2),
-            _ResidueModule(20),
-            _ResidueModule(20),
-        )
-
-    def forward(self, x):
-        # x  x.view(x.size()[0], 60)
-        return  self.layers(x)
-
-
-class _MergeModule2(torch.nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.layers = torch.nn.Sequential(
-            _ResidueModule(20),
-            _ResidueModule(20),
-            torch.nn.AdaptiveAvgPool1d(1),
-        )
-        self.classifier = torch.nn.Linear(20, 1)
-    def forward(self, x):
-        y = self.layers(x).squeeze(dim=2)
-        return self.classifier(y)
-
+# module to "compress" the data in to a set of descriptors
 
 
 class _PermutationModule(torch.nn.Module):
@@ -257,34 +123,33 @@ class _PermutationModule(torch.nn.Module):
         # we compute by hand the different paths
 
         # Quartet 1 (12|34)
-        d01 = d0 + d1
-        F1 = self._MergeModuleLv1(d01)
+        # d01 = d0 + d1
+        d01 = self._MergeModuleLv1(d0, d1)
 
-        d23 = d2 + d3
-        F2 = self._MergeModuleLv1(d23)
+        # d23 = d2 + d3
+        d23 = self._MergeModuleLv1(d2, d3)
 
-        F12 = F1 + F2
-        G1 = self._MergeModuleLv2(F12)
+        G1 = self._MergeModuleLv2(d01, d23)
 
         #Quartet 2 (13|24)
-        d02 = d0 + d2
-        F6 = self._MergeModuleLv1(d02)
+        # d02 = d0 + d2
+        d02 = self._MergeModuleLv1(d0, d2)
 
-        d13 = d1 + d3
-        F5 = self._MergeModuleLv1(d13)
+        # d13 = d1 + d3
+        d13 = self._MergeModuleLv1(d1, d3)
 
-        F56 = F5 + F6
-        G2 = self._MergeModuleLv2(F56)
+        # F56 = F5 + F6
+        G2 = self._MergeModuleLv2(d02, d13)
 
         # Quartet 3 (14|23)
-        d03 = d0 + d3
-        F3 = self._MergeModuleLv1(d03)
+        # d03 = d0 + d3
+        d03 = self._MergeModuleLv1(d0, d3)
 
-        d12 = d1 + d2
-        F4 = self._MergeModuleLv1(d12)
+        # d12 = d1 + d2
+        d12 = self._MergeModuleLv1(d1, d2)
 
-        F34 = F3 + F4
-        G3 = self._MergeModuleLv2(F34)
+        # F34 = F3 + F4
+        G3 = self._MergeModuleLv2(d03, d12)
 
 
         # putting all the quartest together
@@ -297,20 +162,23 @@ class _PermutationModule(torch.nn.Module):
 dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=8,
+                                              num_workers=4,
                                               pin_memory=True )
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                              batch_size=batch_size,
-                                             num_workers=8,
+                                             num_workers=4,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 # defining the models
-D  = _DescriptorModule()
-M1 = _MergeModule()
-M2 = _MergeModule2()
+# this is harwired for now
+D  = _NonLinearEmbedding(1550, 20, 10, 128)
+# non-linear merge is just a bunch of dense ResNets 
+M1 = _NonLinearMergeEmbed(128, 128, 6)
+
+M2 = _NonLinearScore(128, 128, 3)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
@@ -321,7 +189,7 @@ criterion = torch.nn.CrossEntropyLoss(reduction='sum')
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-# specify scheduler
+# specidy scheduler
 exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                              step_size=10, gamma=0.9)
 
@@ -341,7 +209,7 @@ for epoch in range(1, nEpochs+1):
     ###################
     for genes, quartets_batch in dataloaderTrain:
         #send to the device (either cpu or gpu)
-        genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
+        genes, quartets_batch = genes.to(device), quartets_batch.to(device)
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
         # forward pass: compute predicted outputs by passing inputs to the model
@@ -374,7 +242,7 @@ for epoch in range(1, nEpochs+1):
 
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
-            genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
+            genes, quartets_batch = genes.to(device), quartets_batch.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
             quartetsNN = model(genes)
             # calculate the loss
