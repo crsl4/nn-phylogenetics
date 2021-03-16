@@ -7,7 +7,7 @@ name_script_new = "network_perm_equivariant_modular_conv_new_lba.py"
 string = "#!/usr/bin/env bash \n\n#SBATCH --partition=batch_default\n#SBATCH --cpus-per-task=2\n#SBATCH --gres=gpu:1\n#SBATCH --time=48:00:00\n\nsource ~/.bashrc\nmodule load anaconda/wml\nbootstrap_conda\nmodule load cuda\n\nconda activate pytorch\n\nCUDA_VISIBLE_DEVICES=0 python "
 
 
-for ii in [1, 4, 17, 22, 25]:
+for ii in [1, 4, 16, 21, 24]:
     for lr in [0.01, 0.001, 0.0001]:
         for bs in [16, 32, 64, 128]:
 

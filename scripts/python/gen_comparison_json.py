@@ -48,7 +48,7 @@ sequence_names =['sequences113683228-0.1-10.0-0.01.in',
 'sequences976422-0.5-10.0-1.0.in', 'sequences976683228-0.1-40.0-0.01.in']
 
 
-for ii in [1, 4, 17, 22, 25]:
+for ii in [1, 4, 16, 21, 24]:
     data['labelFile'] = labels_names[ii]
     data['matFile'] = sequence_names[ii]
 
