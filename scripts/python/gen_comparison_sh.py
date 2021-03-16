@@ -1,6 +1,6 @@
 import os 
 
-name_script_old = "network_permutation_equivariant_shallow_lba.py"
+name_script_old = "network_permutation_equivariant_shallow_new_lba.py"
 name_script_new = "network_perm_equivariant_modular_conv_new_lba.py"
 
 
