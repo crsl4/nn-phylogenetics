@@ -184,6 +184,14 @@ Re-started on desktop 5/9 830am, finished 12pm
 
   I had to check that the sequences were simulated in the correct order in the *.dat files. The S1,S2,S3,S4 in the paml file correspond to the order in the tree in the dat file. Files look ok!
 
+Actually, no, it seems that the numbers match what we would expect:
+```
+Model tree & branch lengths:
+((S2: 0.100000, S1: 0.200000): 0.000500, (S3: 0.100000, S4: 0.200000): 0.000500);
+((2: 0.100000, 1: 0.200000): 0.000500, (3: 0.100000, 4: 0.200000): 0.000500);
+```
+So, Si corresponds to taxon i.
+
 
 We summarize the files:
 ```shell
@@ -718,6 +726,13 @@ That is, for `rep-1.dat`, PAML is simulating sequences from the tree:
 The order of the taxa will be order read, so S1=4, S2=1, S3=2, S4=3.
 So, we might need to simulate the data again to force the order of taxa.
 
+Actually, no, it seems that the numbers match what we would expect:
+```
+Model tree & branch lengths:
+((S2: 0.100000, S1: 0.200000): 0.000500, (S3: 0.100000, S4: 0.200000): 0.000500);
+((2: 0.100000, 1: 0.200000): 0.000500, (3: 0.100000, 4: 0.200000): 0.000500);
+```
+So, Si corresponds to taxon i.
 
 # LBA simulations
 
@@ -1585,3 +1600,92 @@ Claudia
 - This new version works better as it seems to keep the geometry of the input
 - The files `gen_json_files.py` and `gen_sh_files.py` provide automatic means for tests on slurm
 - We want to start exploring extension to 5 or 6 taxa for the paper
+
+
+# Comparing NN performance to standard phylogenetics inference
+
+## 1. Extracting sample data
+We will grab one 4-taxon dataset from a randomly chosen file: `sequences45435-1.0-40.0-0.1.in` and `labels45435-1.0-40.0-0.1.in`.
+
+In the sequence file, we have a 400,000 x 1550 matrix in which we have 100,000 4-taxon datasets. We will grab the last 4 rows which correspond to one 4-taxon dataset.
+
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+wc -l sequences45435-1.0-40.0-0.1.in  ## 400000
+sed -n '399997,400000 p' sequences45435-1.0-40.0-0.1.in > test.in
+```
+
+The order of the sequences are always S1,S2,S3,S4.
+
+## 2. Convert sample data to Fasta file
+
+Most phylogenetic methods will need a fasta file as input data. We will create this in julia:
+
+```julia
+datafile = "test.in"
+lines = readlines(datafile)
+fastafile = "test.fasta"
+io = open(fastafile, "w")
+
+n = length(lines)
+l = length(lines[1])
+
+write(io,"$n $l \n")
+for i in 1:n
+   write(io, string(">",i,"\n"))
+   write(io, lines[i])
+   write(io, "\n")
+end
+
+close(io)
+```
+
+## 3. Fitting maximum parsimony (MP) and neighbor-joining (NJ) in R
+
+The easiest phylogenetic methods to fit are MP and NJ, both in R.
+
+To install the necessary packages in R:
+```r
+install.packages("ape", dep=TRUE)
+install.packages("phangorn", dep=TRUE)
+install.packages("adegenet", dep=TRUE) ##I get a warning message
+install.packages("seqinr", dep=TRUE)
+```
+
+To fit the NJ model:
+```r
+library(ape)
+library(phangorn)
+library(adegenet)
+
+## Reading fasta file
+aa = read.aa(file="test.fasta", format="fasta")
+
+## Estimating evolutionary distances using same model as in simulations
+D = dist.ml(aa, model="Dayhoff") 
+
+## Estimating tree
+tree = nj(D)
+
+## Saving estimated tree to text file
+write.tree(tree,file="nj-tree.txt")
+```
+
+To fit the MP model:
+```r
+library(ape)
+library(phangorn)
+library(adegenet)
+
+## Reading fasta file
+aa = read.aa(file="test.fasta", format="fasta")
+
+## Estimating evolutionary distances using same model as in simulations
+D = dist.ml(aa, model="Dayhoff") 
+
+## Estimating tree to use as starting tree
+tree = nj(D)
+
+## Estimating MP tree
+tre.pars <- optim.parsimony(tree, as.phyDat(aa))
+```
