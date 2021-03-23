@@ -3,6 +3,7 @@ data
 simulations
 *.h5
 *.in
+ms/research-fwd-init-phylo-nn/*
 
 # Compiled source #
 ###################
