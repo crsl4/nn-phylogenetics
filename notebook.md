@@ -1671,7 +1671,66 @@ tree = nj(D)
 write.tree(tree,file="nj-tree.txt")
 ```
 
-To fit the MP model:
+Note that we cannot fit the MP model on aminoacid sequences in R (we need DNA sequences).
+
+## 4. Fitting maximum likelihood (ML) with RAxML
+
+1. Download `raxml-ng` from [here](https://github.com/amkozlov/raxml-ng). You get a zipped folder: `raxml-ng_v1.0.2_macos_x86_64` which I placed in my `software` folder
+
+2. Checking the version
+```shell
+cd Dropbox/software/raxml-ng_v1.0.2_macos_x86_64/
+./raxml-ng -v
+```
+
+3. Infer the ML tree using the same model as in the simulations
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+~/Dropbox/software/raxml-ng_v1.0.2_macos_x86_64/raxml-ng --msa test.fasta --model Dayhoff --prefix T3 --threads 2 --seed 616
+
+Final LogLikelihood: -14728.557112
+
+AIC score: 29467.114224 / AICc score: 29467.153084 / BIC score: 29493.844275
+Free parameters (model + branch lengths): 5
+
+Best ML tree saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.bestTree
+All ML trees saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.mlTrees
+Optimized model saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.bestModel
+
+Execution log saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.log
+
+Analysis started: 23-Mar-2021 18:18:12 / finished: 23-Mar-2021 18:18:13
+
+Elapsed time: 0.921 seconds
+```
+
+Best tree saved in `T3.raxml.bestTree`. We used the `T3` prefix for the files because of the raxml tutorial, but we can choose any prefix.
+Warning: Note that the tree has the `>` as part of the taxon names.
+
+We will get rid of the `>` in the shell to avoid problems later:
+```shell
+sed -i '' -e $'s/>//g' T3.raxml.bestTree
+```
+
+## 5. Fitting bayesian inference (BI) with MrBayes
+
+1. Download MrBayes from [here](http://nbisweden.github.io/MrBayes/). In mac:
+```shell
+brew tap brewsci/bio
+brew install mrbayes --with-open-mpi
+
+$ which mb
+/usr/local/bin/mb
+```
+
+Had to troubleshoot a lot!
+```shell
+brew reinstall mrbayes
+sudo chown -R $(whoami) /usr/local/Cellar/open-mpi/4.1.0
+brew reinstall mrbayes
+```
+
+2. MrBayes needs nexus files. We will do this in R:
 ```r
 library(ape)
 library(phangorn)
@@ -1680,12 +1739,64 @@ library(adegenet)
 ## Reading fasta file
 aa = read.aa(file="test.fasta", format="fasta")
 
-## Estimating evolutionary distances using same model as in simulations
-D = dist.ml(aa, model="Dayhoff") 
-
-## Estimating tree to use as starting tree
-tree = nj(D)
-
-## Estimating MP tree
-tre.pars <- optim.parsimony(tree, as.phyDat(aa))
+## Write as nexus file
+write.nexus.data(aa,file="test.nexus",format="protein")
 ```
+
+3. Add the mrbayes block to the nexus file. MrBayes requires that you write a text block at the end of the nexus file. We will write this block in a text file called `mb-block.txt` and we can use the same block for all runs.
+```
+begin mrbayes;
+set nowarnings=yes;
+set autoclose=yes;
+prset aamodel=fixed(dayhoff);
+mcmcp ngen=100000 burninfrac=.25 samplefreq=50 printfreq=10000 [increase these for real]
+diagnfreq=10000 nruns=2 nchains=2 temp=0.40 swapfreq=10;       [increase for real analysis]
+mcmc;
+sumt;
+end;
+```
+This block specifies the length of the MCMC chain and the aminoacid model (Dayhoff which is the same used in simulations).
+
+We will add the mrbayes block in the shell:
+```shell
+cat test.nexus mb-block.txt > test-mb.nexus
+```
+
+4. Run MrBayes:
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+mb test-mb.nexus
+```
+
+The estimated tree is in `test-mb.nexus.con.tre`.
+
+## 6. Comparing the estimated trees to the true tree
+
+The true tree is in the file `labels45435-1.0-40.0-0.1.in`.
+We will use R to compare the trees.
+
+```r
+## read true trees
+d = read.table("labels45435-1.0-40.0-0.1.in", header=FALSE)
+n = length(d$V1)
+## labels from the simulating script:
+quartets = c("((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));")
+## to which quartet the label corresponds to:
+truetree = read.tree(text=quartets[d[n,]])
+
+library(ape)
+## read the NJ tree:
+njtree = read.tree(file="nj-tree.txt")
+## read the ML tree:
+mltree = read.tree(file="T3.raxml.bestTree")
+## read the BI tree
+bitree = read.nexus(file="test-mb.nexus.con.tre")
+
+## Calculating the Robinson-Foulds distance with true tree:
+library(phangorn)
+njdist = RF.dist(truetree,njtree, rooted=FALSE)
+mldist = RF.dist(truetree,mltree, rooted=FALSE)
+bidist = RF.dist(truetree,bitree, rooted=FALSE)
+```
+If the distance is equal to zero, then the method reconstructed the correct tree. For example, `njdist==0` implies that NJ estimated the correct tree.
+
