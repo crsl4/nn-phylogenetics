@@ -1,0 +1,26 @@
+
+##this file run with "condor_submit runparallel.sub" for GPU LAB job
+## directories log, error, and output must exist
+universe = vanilla
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./oldimp_new_lba.sh
+
+arguments = $(json_file)  >> test1128001.out &
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files =  modules.py,oldimp_new_lba.py, oldimp_new_lba1.json, oldimp_new_lba2.json, oldimp_new_lba3.json,new_lba_files.txt,  http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz, packages.tar.gz, sequences18683228-0.1-10.0-1.0.in,labels18683228-0.1-10.0-1.0.in
+
++WantGPULab = true
++GPUJobLength = "short"
++wantFlocking = true
+
+request_gpus = 1
+request_cpus = 1
+request_memory = 48GB
+request_disk = 32GB
+
+queue json_file from oldimp_new_lba_files.txt
