@@ -1800,3 +1800,74 @@ bidist = RF.dist(truetree,bitree, rooted=FALSE)
 ```
 If the distance is equal to zero, then the method reconstructed the correct tree. For example, `njdist==0` implies that NJ estimated the correct tree.
 
+# New simulations pseudo-code
+
+If the results after the sanity check (comparison with NJ, RAxML and MrBayes) is not favorable, we might want to do more simulations.
+
+It might be easier if the simulation scripts are in python too, so I write an algorithm below that we could convert to python script.
+
+## Option 1: Simulate large trees and then extract 4-taxon trees
+The advantage of this approach is that we will see many different tree patterns by simulating large trees first, and then extracting the 4-taxon trees, as opposed to simulating 4-taxon trees directly.
+
+Parameters:
+- `n`: number of trees to simulate
+- `lambda`: birth rate for tree simulation
+- `nu`: death rate for tree simulation
+- `tau`: maximum time that we let simulation run to generate a random tree. We want this quantity to be large so that we have trees with different number of taxa
+- `seed`: global random seed to generate seeds for each individual run
+- `kappa`: transition-tranverstion bias for the simulation of sequences under the HKY model
+- `pi`: state frequencies of nucleotides (4 total: A,C,G,T)
+- `L`: length of sequence
+
+
+For i in 1:n
+1. Simulate a random tree under the birth death process using [dendropy](https://dendropy.org/library/birthdeath.html):
+`tree = dendropy.model.birthdeath.birth_death_tree(lambda, nu, max_time=tau, rng=seeds[i])`
+2. Simulate DNA sequences on the tree following [this script by Pyvolve](https://github.com/sjspielman/pyvolve/blob/master/examples/custom_nucleotide.py)
+`my_evolver = pyvolve.Evolver(partitions=my_partitions, size=L)`
+3. Prune the tree to only 4 leaves with [ETE](http://etetoolkit.org/docs/latest/reference/reference_tree.html?highlight=prune#ete3.TreeNode.prune)
+`tree.prune([1,2,3,4], preserve_branch_length=True)`. Note that we also need to extract only the 4 sequences and assign a label to the tree whether it corresponds to the 12|34, 13|24 or 14|23 quartet
+
+Output:
+- List of `n` quartet labels
+- List of `n` 4-taxon trees in parenthetical format with branch lengths (we will need this to summarize the results)
+- `n` 4xL matrices with nucleotides
+
+
+## Option 2: Simulate 4-taxon trees with different branch length setups
+We can use Table 1 in [this paper](https://academic.oup.com/sysbio/article/69/2/221/5559282) for the different branch length setups on 4-taxon trees.
+
+Parameters:
+- `n`: number of trees to simulate
+- `seed`: global random seed to generate seeds for each individual run
+- `kappa`: transition-tranverstion bias for the simulation of sequences under the HKY model
+- `pi`: state frequencies of nucleotides (4 total: A,C,G,T)
+- `L`: length of sequence
+
+
+For i in 1:n
+1. Choose randomly one quartet: 12|34, 13|24, 14|23 (use specific seed `seeds[i]` for replication) and read the tree with [Dendropy](https://dendropy.org/primer/reading_and_writing.html):
+`tree3 = dendropy.Tree.get(data="((A,B),(C,D));", schema="newick")`
+2. Choose randomly one scenario from Table 1:
+       - Truncated exponential
+       - Farris zone
+       - Twisted Farris zone
+       - Extended Farris zone
+       - Felsenstein zone
+       - Extended Felsenstein zone
+       - Long branches
+       - Extra long branches
+       - Single long branch
+       - Short branches
+       - Extra short branches
+       - Single short branch
+       - Short internal branch
+3. Choose randomly branches for each of the 5 branches according to the distributions of the specific selected scenario (e.g. for "Truncated exponential" all branches are sampled from Truncated Exponential(10,0,0.5)). See [this script from Dendropy](https://dendropy.org/primer/reading_and_writing.html) for an example on how to set branch lengths with `edge.length = x` and we can use [numpy](https://numpy.org/doc/stable/reference/random/generated/numpy.random.uniform.html) for the generation of random Uniform or Exponential random variables
+4. Simulate DNA sequences on the tree following [this script by Pyvolve](https://github.com/sjspielman/pyvolve/blob/master/examples/custom_nucleotide.py)
+`my_evolver = pyvolve.Evolver(partitions=my_partitions, size=L)`
+
+
+Output:
+- List of `n` quartet labels
+- List of `n` 4-taxon trees in parenthetical format with branch lengths (we will need this to summarize the results)
+- `n` 4xL matrices with nucleotides
