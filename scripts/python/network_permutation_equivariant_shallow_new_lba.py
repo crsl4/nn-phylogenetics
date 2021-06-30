@@ -195,10 +195,12 @@ class _DescriptorModule(torch.nn.Module):
         )
 
     def forward(self, x):
-        return self.layers(x)
+        y = self.layers(x)
+        
+        return y
 
 
-
+# \Phi
 class _MergeModule(torch.nn.Module):
 
     def __init__(self):
@@ -218,7 +220,7 @@ class _MergeModule(torch.nn.Module):
         # x  x.view(x.size()[0], 60)
         return  self.layers(x)
 
-
+# \Psi
 class _MergeModule2(torch.nn.Module):
 
     def __init__(self):
@@ -250,6 +252,7 @@ class _PermutationModule(torch.nn.Module):
         x = x.view(x.size()[0],4,20,-1)   
 
         d0 =  self._DescriptorModule(x[:,0,:,:]) 
+        # dimensions (None, 20, 1550//4)
         d1 =  self._DescriptorModule(x[:,1,:,:])     
         d2 =  self._DescriptorModule(x[:,2,:,:])     
         d3 =  self._DescriptorModule(x[:,3,:,:])   
@@ -258,7 +261,9 @@ class _PermutationModule(torch.nn.Module):
 
         # Quartet 1 (12|34)
         d01 = d0 + d1
+        # dimensions (None, 20, 1550//4)
         F1 = self._MergeModuleLv1(d01)
+        # dimensions (None, 20, 1550//16)
 
         d23 = d2 + d3
         F2 = self._MergeModuleLv1(d23)
@@ -405,20 +410,26 @@ torch.save(model.state_dict(), modelRoot + "/" +
 
 if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
-        f.write("{} \t {} \t {} \t {} \t {} \n".format("Script name",
+        f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {}\n".format("Script name",
                                     " Json file",
+                                    "label file",
                                     "lerning rate", 
                                     "batch size", 
                                     "max testing accuracy", 
-                                    "train loss"))
-
+                                    "train loss", 
+                                    "N epoch", 
+                                    "chnl_dim",
+                                    "embd_dim"))
+        
 # we write the last data to a file
 with open(summary_file, 'a') as f:
-    f.write("{} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
+    f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
                                     nameJson.split(".")[0],
+                                    label_file,
                                     str(lr), 
                                     str(batch_size), 
                                     str(maxAccuracy), 
-                                    str(train_loss)))
+                                    str(train_loss),
+                                    str(nEpochs)))
 ## testing and saving data to centralized file 
 

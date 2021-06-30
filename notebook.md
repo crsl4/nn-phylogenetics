@@ -184,6 +184,14 @@ Re-started on desktop 5/9 830am, finished 12pm
 
   I had to check that the sequences were simulated in the correct order in the *.dat files. The S1,S2,S3,S4 in the paml file correspond to the order in the tree in the dat file. Files look ok!
 
+Actually, no, it seems that the numbers match what we would expect:
+```
+Model tree & branch lengths:
+((S2: 0.100000, S1: 0.200000): 0.000500, (S3: 0.100000, S4: 0.200000): 0.000500);
+((2: 0.100000, 1: 0.200000): 0.000500, (3: 0.100000, 4: 0.200000): 0.000500);
+```
+So, Si corresponds to taxon i.
+
 
 We summarize the files:
 ```shell
@@ -718,6 +726,13 @@ That is, for `rep-1.dat`, PAML is simulating sequences from the tree:
 The order of the taxa will be order read, so S1=4, S2=1, S3=2, S4=3.
 So, we might need to simulate the data again to force the order of taxa.
 
+Actually, no, it seems that the numbers match what we would expect:
+```
+Model tree & branch lengths:
+((S2: 0.100000, S1: 0.200000): 0.000500, (S3: 0.100000, S4: 0.200000): 0.000500);
+((2: 0.100000, 1: 0.200000): 0.000500, (3: 0.100000, 4: 0.200000): 0.000500);
+```
+So, Si corresponds to taxon i.
 
 # LBA simulations
 
@@ -1585,3 +1600,274 @@ Claudia
 - This new version works better as it seems to keep the geometry of the input
 - The files `gen_json_files.py` and `gen_sh_files.py` provide automatic means for tests on slurm
 - We want to start exploring extension to 5 or 6 taxa for the paper
+
+
+# Comparing NN performance to standard phylogenetics inference
+
+## 1. Extracting sample data
+We will grab one 4-taxon dataset from a randomly chosen file: `sequences45435-1.0-40.0-0.1.in` and `labels45435-1.0-40.0-0.1.in`.
+
+In the sequence file, we have a 400,000 x 1550 matrix in which we have 100,000 4-taxon datasets. We will grab the last 4 rows which correspond to one 4-taxon dataset.
+
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+wc -l sequences45435-1.0-40.0-0.1.in  ## 400000
+sed -n '399997,400000 p' sequences45435-1.0-40.0-0.1.in > test.in
+```
+
+The order of the sequences are always S1,S2,S3,S4.
+
+## 2. Convert sample data to Fasta file
+
+Most phylogenetic methods will need a fasta file as input data. We will create this in julia:
+
+```julia
+datafile = "test.in"
+lines = readlines(datafile)
+fastafile = "test.fasta"
+io = open(fastafile, "w")
+
+n = length(lines)
+l = length(lines[1])
+
+write(io,"$n $l \n")
+for i in 1:n
+   write(io, string(">",i,"\n"))
+   write(io, lines[i])
+   write(io, "\n")
+end
+
+close(io)
+```
+
+## 3. Fitting maximum parsimony (MP) and neighbor-joining (NJ) in R
+
+The easiest phylogenetic methods to fit are MP and NJ, both in R.
+
+To install the necessary packages in R:
+```r
+install.packages("ape", dep=TRUE)
+install.packages("phangorn", dep=TRUE)
+install.packages("adegenet", dep=TRUE) ##I get a warning message
+install.packages("seqinr", dep=TRUE)
+```
+
+To fit the NJ model:
+```r
+library(ape)
+library(phangorn)
+library(adegenet)
+
+## Reading fasta file
+aa = read.aa(file="test.fasta", format="fasta")
+
+## Estimating evolutionary distances using same model as in simulations
+D = dist.ml(aa, model="Dayhoff") 
+
+## Estimating tree
+tree = nj(D)
+
+## Saving estimated tree to text file
+write.tree(tree,file="nj-tree.txt")
+```
+
+Note that we cannot fit the MP model on aminoacid sequences in R (we need DNA sequences).
+
+## 4. Fitting maximum likelihood (ML) with RAxML
+
+1. Download `raxml-ng` from [here](https://github.com/amkozlov/raxml-ng). You get a zipped folder: `raxml-ng_v1.0.2_macos_x86_64` which I placed in my `software` folder
+
+2. Checking the version
+```shell
+cd Dropbox/software/raxml-ng_v1.0.2_macos_x86_64/
+./raxml-ng -v
+```
+
+3. Infer the ML tree using the same model as in the simulations
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+~/Dropbox/software/raxml-ng_v1.0.2_macos_x86_64/raxml-ng --msa test.fasta --model Dayhoff --prefix T3 --threads 2 --seed 616
+
+Final LogLikelihood: -14728.557112
+
+AIC score: 29467.114224 / AICc score: 29467.153084 / BIC score: 29493.844275
+Free parameters (model + branch lengths): 5
+
+Best ML tree saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.bestTree
+All ML trees saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.mlTrees
+Optimized model saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.bestModel
+
+Execution log saved to: /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results/T3.raxml.log
+
+Analysis started: 23-Mar-2021 18:18:12 / finished: 23-Mar-2021 18:18:13
+
+Elapsed time: 0.921 seconds
+```
+
+Best tree saved in `T3.raxml.bestTree`. We used the `T3` prefix for the files because of the raxml tutorial, but we can choose any prefix.
+Warning: Note that the tree has the `>` as part of the taxon names.
+
+We will get rid of the `>` in the shell to avoid problems later:
+```shell
+sed -i '' -e $'s/>//g' T3.raxml.bestTree
+```
+
+## 5. Fitting bayesian inference (BI) with MrBayes
+
+1. Download MrBayes from [here](http://nbisweden.github.io/MrBayes/). In mac:
+```shell
+brew tap brewsci/bio
+brew install mrbayes --with-open-mpi
+
+$ which mb
+/usr/local/bin/mb
+```
+
+Had to troubleshoot a lot!
+```shell
+brew reinstall mrbayes
+sudo chown -R $(whoami) /usr/local/Cellar/open-mpi/4.1.0
+brew reinstall mrbayes
+```
+
+2. MrBayes needs nexus files. We will do this in R:
+```r
+library(ape)
+library(phangorn)
+library(adegenet)
+
+## Reading fasta file
+aa = read.aa(file="test.fasta", format="fasta")
+
+## Write as nexus file
+write.nexus.data(aa,file="test.nexus",format="protein")
+```
+
+3. Add the mrbayes block to the nexus file. MrBayes requires that you write a text block at the end of the nexus file. We will write this block in a text file called `mb-block.txt` and we can use the same block for all runs.
+```
+begin mrbayes;
+set nowarnings=yes;
+set autoclose=yes;
+prset aamodel=fixed(dayhoff);
+mcmcp ngen=100000 burninfrac=.25 samplefreq=50 printfreq=10000 [increase these for real]
+diagnfreq=10000 nruns=2 nchains=2 temp=0.40 swapfreq=10;       [increase for real analysis]
+mcmc;
+sumt;
+end;
+```
+This block specifies the length of the MCMC chain and the aminoacid model (Dayhoff which is the same used in simulations).
+
+We will add the mrbayes block in the shell:
+```shell
+cat test.nexus mb-block.txt > test-mb.nexus
+```
+
+4. Run MrBayes:
+```shell
+cd Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/simulations-zou2019/results
+mb test-mb.nexus
+```
+
+The estimated tree is in `test-mb.nexus.con.tre`.
+
+## 6. Comparing the estimated trees to the true tree
+
+The true tree is in the file `labels45435-1.0-40.0-0.1.in`.
+We will use R to compare the trees.
+
+```r
+## read true trees
+d = read.table("labels45435-1.0-40.0-0.1.in", header=FALSE)
+n = length(d$V1)
+## labels from the simulating script:
+quartets = c("((1,2),(3,4));", "((1,3),(2,4));", "((1,4),(2,3));")
+## to which quartet the label corresponds to:
+truetree = read.tree(text=quartets[d[n,]])
+
+library(ape)
+## read the NJ tree:
+njtree = read.tree(file="nj-tree.txt")
+## read the ML tree:
+mltree = read.tree(file="T3.raxml.bestTree")
+## read the BI tree
+bitree = read.nexus(file="test-mb.nexus.con.tre")
+
+## Calculating the Robinson-Foulds distance with true tree:
+library(phangorn)
+njdist = RF.dist(truetree,njtree, rooted=FALSE)
+mldist = RF.dist(truetree,mltree, rooted=FALSE)
+bidist = RF.dist(truetree,bitree, rooted=FALSE)
+```
+If the distance is equal to zero, then the method reconstructed the correct tree. For example, `njdist==0` implies that NJ estimated the correct tree.
+
+# New simulations pseudo-code
+
+If the results after the sanity check (comparison with NJ, RAxML and MrBayes) is not favorable, we might want to do more simulations.
+
+It might be easier if the simulation scripts are in python too, so I write an algorithm below that we could convert to python script.
+
+## Option 1: Simulate large trees and then extract 4-taxon trees
+The advantage of this approach is that we will see many different tree patterns by simulating large trees first, and then extracting the 4-taxon trees, as opposed to simulating 4-taxon trees directly.
+
+Parameters:
+- `n`: number of trees to simulate
+- `lambda`: birth rate for tree simulation
+- `nu`: death rate for tree simulation
+- `tau`: maximum time that we let simulation run to generate a random tree. We want this quantity to be large so that we have trees with different number of taxa
+- `seed`: global random seed to generate seeds for each individual run
+- `kappa`: transition-tranverstion bias for the simulation of sequences under the HKY model
+- `pi`: state frequencies of nucleotides (4 total: A,C,G,T)
+- `L`: length of sequence
+
+
+For i in 1:n
+1. Simulate a random tree under the birth death process using [dendropy](https://dendropy.org/library/birthdeath.html):
+`tree = dendropy.model.birthdeath.birth_death_tree(lambda, nu, max_time=tau, rng=seeds[i])`
+2. Simulate DNA sequences on the tree following [this script by Pyvolve](https://github.com/sjspielman/pyvolve/blob/master/examples/custom_nucleotide.py)
+`my_evolver = pyvolve.Evolver(partitions=my_partitions, size=L)`
+3. Prune the tree to only 4 leaves with [ETE](http://etetoolkit.org/docs/latest/reference/reference_tree.html?highlight=prune#ete3.TreeNode.prune)
+`tree.prune([1,2,3,4], preserve_branch_length=True)`. Note that we also need to extract only the 4 sequences and assign a label to the tree whether it corresponds to the 12|34, 13|24 or 14|23 quartet
+
+Output:
+- List of `n` quartet labels
+- List of `n` 4-taxon trees in parenthetical format with branch lengths (we will need this to summarize the results)
+- `n` 4xL matrices with nucleotides
+
+
+## Option 2: Simulate 4-taxon trees with different branch length setups
+We can use Table 1 in [this paper](https://academic.oup.com/sysbio/article/69/2/221/5559282) for the different branch length setups on 4-taxon trees.
+
+Parameters:
+- `n`: number of trees to simulate
+- `seed`: global random seed to generate seeds for each individual run
+- `kappa`: transition-tranverstion bias for the simulation of sequences under the HKY model
+- `pi`: state frequencies of nucleotides (4 total: A,C,G,T)
+- `L`: length of sequence
+
+
+For i in 1:n
+1. Choose randomly one quartet: 12|34, 13|24, 14|23 (use specific seed `seeds[i]` for replication) and read the tree with [Dendropy](https://dendropy.org/primer/reading_and_writing.html):
+`tree3 = dendropy.Tree.get(data="((A,B),(C,D));", schema="newick")`
+2. Choose randomly one scenario from Table 1:
+       - Truncated exponential
+       - Farris zone
+       - Twisted Farris zone
+       - Extended Farris zone
+       - Felsenstein zone
+       - Extended Felsenstein zone
+       - Long branches
+       - Extra long branches
+       - Single long branch
+       - Short branches
+       - Extra short branches
+       - Single short branch
+       - Short internal branch
+3. Choose randomly branches for each of the 5 branches according to the distributions of the specific selected scenario (e.g. for "Truncated exponential" all branches are sampled from Truncated Exponential(10,0,0.5)). See [this script from Dendropy](https://dendropy.org/primer/reading_and_writing.html) for an example on how to set branch lengths with `edge.length = x` and we can use [numpy](https://numpy.org/doc/stable/reference/random/generated/numpy.random.uniform.html) for the generation of random Uniform or Exponential random variables
+4. Simulate DNA sequences on the tree following [this script by Pyvolve](https://github.com/sjspielman/pyvolve/blob/master/examples/custom_nucleotide.py)
+`my_evolver = pyvolve.Evolver(partitions=my_partitions, size=L)`
+
+
+Output:
+- List of `n` quartet labels
+- List of `n` 4-taxon trees in parenthetical format with branch lengths (we will need this to summarize the results)
+- `n` 4xL matrices with nucleotides

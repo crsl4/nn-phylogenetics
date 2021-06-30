@@ -365,6 +365,7 @@ if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
         f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {}\n".format("Script name",
                                     " Json file",
+                                    "label file",
                                     "lerning rate", 
                                     "batch size", 
                                     "max testing accuracy", 
@@ -375,8 +376,9 @@ if not path.exists(summary_file):
 
 # we write the last data to a file
 with open(summary_file, 'a') as f:
-    f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
+    f.write("{} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \t {} \n".format(nameScript.split(".")[0],
                                     nameJson.split(".")[0],
+                                    label_file,
                                     str(lr), 
                                     str(batch_size), 
                                     str(maxAccuracy), 
