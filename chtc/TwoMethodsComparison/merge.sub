@@ -1,0 +1,16 @@
+universe = vanilla
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./merge.sh
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files =  out0.csv,out1.csv,out2.csv,out3.csv,out4.csv
+
+request_cpus = 1
+request_memory = 1GB
+request_disk = 512MB
+
+queue

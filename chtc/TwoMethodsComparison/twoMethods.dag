@@ -1,0 +1,24 @@
+#Run "condor_submit_dag process.dag" to cause all the code specified in
+# the following Directed Acyclic Graph (DAG), below, to run:
+#
+# (job 1)  Compare_all.sub (parallel runs of the two methods to different data)
+#              | 
+#              V
+# (job2)   merge.sub (merge the results csv files into one csv file)
+#            \ | /
+#              V
+# (job3)    getAccuracy.sub (get the accuracy of two methods in a csv file)
+#
+#
+# For more information, see
+# https://htcondor.readthedocs.io/en/v8_9_3/users-manual/dagman-applications.html
+#
+# Run "condor_submit_dag sd.dag" to cause all the code specified in
+# the DAG to run in the correct order.
+
+job 1 Compare_all.sub
+job 2 merge.sub
+job 3 getAccuracy.sub
+
+parent 1 child 2
+parent 2 child 3 

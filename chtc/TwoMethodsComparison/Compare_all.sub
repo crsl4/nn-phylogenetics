@@ -1,0 +1,29 @@
+universe = docker
+docker_image = syang6666/images:allmethods
+
+
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./Compare_all.sh
+
+timesfour = $(Process)*4
+four = $INT(timesfour,%d)
+topvar = 400000-$(four)
+botvar = 400000-3-$(four)
+top = $INT(topvar,%d)
+bot = $INT(botvar,%d) 
+
+arguments = $(top) $(bot) $(Process)
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files =  sequences4728283-0.5-10.0-0.01.in,convert.jl,julia-1.6.0-linux-x86_64.tar.gz,Nj.R,raxml.tar.gz,mb.R,labels4728283-0.5-10.0-0.01.in, comparison.R, mb-block.txt
+requirements = (HasChtcSoftware == true)
+
+request_cpus = 1
+request_memory = 2GB
+request_disk = 1GB
+
+queue 5
