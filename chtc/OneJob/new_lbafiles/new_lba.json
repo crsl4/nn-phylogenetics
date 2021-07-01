@@ -1,0 +1,19 @@
+{
+    "with_distrib":     false,
+    "_comment":         " model parameters",
+    "ngpu":              1,
+    "lr":                0.0001,
+    "batchSize":         128, 
+    "modelRoot":         "best_models",
+    "dataRoot":          "",
+    "labelFile":         "labels976683228-0.1-40.0-0.01.in",
+    "matFile":           "sequences976683228-0.1-40.0-0.01.in",
+    "nTrainSamples":      9500,
+    "nTestSamples":       500,
+    "_comment":         "that's all",
+    "nEpochs":           100, 
+    "gamma":             0.98,
+    "lrSteps":           10,
+    "channel_dimension":   5,
+    "embedding_dimension":   128   
+}
