@@ -1,0 +1,23 @@
+universe = docker
+docker_image = syang6666/threemethods:run
+
+
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./Two_methods.sh
+
+arguments = $(Process)
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+transfer_input_files =  labels4728283-0.5-10.0-0.01.in,sequences4728283-0.5-10.0-0.01.in,julia-1.6.0-linux-x86_64.tar.gz, Convert_all.jl, NeighborJoining.R, raxml.tar.gz, Comparison.R
+
+requirements = (HasChtcSoftware == true)
+
+request_cpus = 1
+request_memory = 4GB
+request_disk = 2GB
+
+queue 2
