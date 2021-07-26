@@ -4,9 +4,9 @@ This .md file will describe runs of 500 tests of three methods Neighbor-joining,
 
 ## Input Files
 
-Input file: labels/sequences##-a-b-c.in (ex. labels/sequences68163238-0.1-2.0-1.0.in) .[here].(https://drive.google.com/drive/folders/1LUNzOxSrL7QJcaKd7mI4uokUEyFHvsYc)
+Input file: labels/sequences##-a-b-c.in (ex. labels/sequences68163238-0.1-2.0-1.0.in) .[here](https://drive.google.com/drive/folders/1LUNzOxSrL7QJcaKd7mI4uokUEyFHvsYc)
 
-## CHTC Scripts [here] (https://github.com/crsl4/nn-phylogenetics/tree/master/chtc/ThreeMethods)
+## CHTC Scripts [here](https://github.com/crsl4/nn-phylogenetics/tree/master/chtc/ThreeMethods)
 CHTC dag scripts: 
 - twoMethods.dag (to control the flow to merge and calculate accuracy of all 500 jobs)
 CHTC submit scripts: 
@@ -38,4 +38,4 @@ Output files returned from CHTC:
 - twoMethods.dag.lib.err: Log of HTCondor library error messages   
 - twoMethods.dag.dagman.log: Log of the life of condor_dagman itself  
 - Output of one run of all three methods could be returned by changing the Two_methods.sh file
-Output files saved in google drive: [here] (https://drive.google.com/drive/folders/17l7u3PFQ3o87GJ_6ApjfZWfimUIHbHlF)
+Output files saved in google drive: [here](https://drive.google.com/drive/folders/17l7u3PFQ3o87GJ_6ApjfZWfimUIHbHlF)
