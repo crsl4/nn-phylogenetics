@@ -1,0 +1,23 @@
+universe = docker
+docker_image = syang6666/methods:withmrbayes
+
+
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./Two_methods.sh
+
+arguments = $(Process)
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+transfer_input_files = sequences372783-0.1-40.0-1.0.in, labels372783-0.1-40.0-1.0.in,julia-1.6.0-linux-x86_64.tar.gz, Convert_all.jl, NeighborJoining.R, raxml.tar.gz, Comparison.R, mb-block.txt, MrBayes.R
+
+requirements = (has_avx512dq =?= true)
+
+request_cpus = 1
+request_memory = 4GB
+request_disk = 2GB
+
+queue 50

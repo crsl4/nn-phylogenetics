@@ -1,0 +1,16 @@
+universe = vanilla
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./getAccuracy.sh
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files =  http://proxy.chtc.wisc.edu/SQUID/chtc/R402.tar.gz, packages.tar.gz, accuracy.R,intercsv/output.csv
+
+request_cpus = 1
+request_memory = 1GB
+request_disk = 1GB
+
+queue
