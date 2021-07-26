@@ -7,10 +7,10 @@ executable = ./getAccuracy.sh
 
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-transfer_input_files =  http://proxy.chtc.wisc.edu/SQUID/chtc/R402.tar.gz, packages.tar.gz, accuracy.R,output.csv
+transfer_input_files =  http://proxy.chtc.wisc.edu/SQUID/chtc/R402.tar.gz, packages.tar.gz, accuracy.R,intercsv/output.csv
 
 request_cpus = 1
 request_memory = 1GB
-request_disk = 32MB
+request_disk = 1GB
 
 queue
