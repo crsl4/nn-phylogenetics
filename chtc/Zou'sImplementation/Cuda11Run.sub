@@ -1,0 +1,25 @@
+universe = vanilla
+log    =    log/job1-chtc_$(Cluster)_$(Process).log
+error  =  error/job1-chtc_$(Cluster)_$(Process).err
+output = output/job1_$(Cluster)_$(Process).out
+
+executable = ./Cuda11Run.sh
+
+arguments = runzou.json  >> test.out &
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+transfer_input_files =  Cuda11sequenceZou.py, runzou.json,  http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz, Cudapackages.tar.gz, sequences5722724-0.5-2.0-0.1.in, labels5722724-0.5-2.0-0.1.in
+
++WantGPULab = true
++GPUJobLength = "short"
++wantFlocking = true
+
+request_gpus = 1
+request_cpus = 1
+request_memory = 256GB
+request_disk = 64GB
+
+queue
+
