@@ -65,7 +65,7 @@ with open(dataRoot+sequenceFiles, 'r') as f:
 
 # extracting the number of samples
 n_samples = len(label_char)
-
+print(n_samples)
 # extracting the sequence lenghth
 seq_lenghth = len(seq_string[0])-1
 
@@ -125,11 +125,11 @@ inputTrain  = torch.Tensor(sequences[0:n_train_samples, :, :])
 
 datasetTrain = data.TensorDataset(inputTrain, outputTrain)
 
-outputTest = torch.tensor(labels[-n_test_samples:-1])
-inputTest  = torch.Tensor(sequences[-n_test_samples:-1, :, :])
-
+outputTest = torch.tensor(labels[-n_test_samples:])
+print(outputTest.size())
+inputTest  = torch.Tensor(sequences[-n_test_samples:, :, :])
+print(inputTest.size())
 datasetTest = data.TensorDataset(inputTest, outputTest)
-
 class _Permutation():
 
     def __init__(self):
@@ -281,7 +281,8 @@ dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest,
                                              batch_size=batch_size,
-                                             shuffle=True)
+                                             shuffle=True,
+                                             collate_fn=collate_fc)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
@@ -329,6 +330,7 @@ for epoch in range(1, nEpochs + 1):
 
     # print avg training statistics
     train_loss = train_loss / len(dataloaderTrain)
+    print(len(dataloaderTrain))
     print('Epoch: {} \tTraining Loss: {:.6f}'.format(
         epoch,
         train_loss
@@ -339,10 +341,30 @@ for epoch in range(1, nEpochs + 1):
     
     # we compute the test loss every 10 epochs
     if epoch % 10 == 0:
+        
 
         model.eval()
         correct, total = 0, 0
+        perm0 =  torch.tensor([ 0, 0, 1, 2,
+                                1, 2, 0, 0,
+                                1, 2, 1, 2,
+                                2, 1, 2, 1,
+                                0, 0, 2, 1,
+                                2, 1, 0, 0], dtype = torch.long)
 
+        perm1 =  torch.tensor([ 1, 2, 0, 0,
+                                2, 1, 2, 1,
+                                2, 1, 0, 0,
+                                0, 0, 1, 2,
+                                1, 2, 1, 2,
+                                0, 0, 2, 1 ], dtype = torch.long)
+
+        perm2 =  torch.tensor([ 2, 1, 2, 1,
+                                0, 0, 1, 2,
+                                0, 0, 2, 1,
+                                1, 2, 0, 0,
+                                2, 1, 0, 0,
+                                1, 2, 1, 2 ], dtype = torch.long)
         for genes, quartets_batch in dataloaderTest:
             # send to the device (either cpu or gpu)
             genes, quartets_batch = genes.to(device), quartets_batch.to(device)
@@ -350,12 +372,44 @@ for epoch in range(1, nEpochs + 1):
             quartetsNN = model(genes)
             # calculate the loss
             _, predicted = torch.max(quartetsNN, 1)
+            intruth = quartets_batch.reshape(-1,24)
+            inpred = predicted.reshape(-1,24)
+            for i in range(0,int(len(quartets_batch)/24)): 
+              truelabel = intruth[i,0]  
+              predictarray = []
+              for j in range(0,24):
+                if(inpred[i,j]==perm0[j]):
+                  predictarray.append(0)
+                elif(inpred[i,j]==perm1[j]):
+                  predictarray.append(1)
+                elif(inpred[i,j]==perm2[j]):
+                  predictarray.append(2)  
+                else:
+                  predictarray.append(-1)
+              predictlabel =  max(set(predictarray), key = predictarray.count)  
+              if(truelabel == predictlabel):
+                correct +=1          
+              total += 1
+            #print(genes.size())
+            #print(quartets_batch.size())
+            #print(quartetsNN.size())
+            #total += quartets_batch.size(0)
+            #correct += (predicted == quartets_batch).sum().item()
 
-            total += quartets_batch.size(0)
-            correct += (predicted == quartets_batch).sum().item()
-
-        accuracyTest = correct / len(dataloaderTest)
-
+        accuracyTest = correct / total
+        #print(genes)
+        #print(quartets_batch)
+        #print(predicted)
+        #print(predicted.size())
+        #print(quartets_batch.size())
+        print(intruth)
+        print(inpred)
+        print(predictarray)
+        print(truelabel)
+        print(predictlabel)
+        print(total)
+        print(correct)
+        #print(len(dataloaderTest))
         print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch,
                                                          accuracyTest))
         if accuracyTest > maxAccuracy:
