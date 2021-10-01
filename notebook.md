@@ -1871,3 +1871,23 @@ Output:
 - List of `n` quartet labels
 - List of `n` 4-taxon trees in parenthetical format with branch lengths (we will need this to summarize the results)
 - `n` 4xL matrices with nucleotides
+
+
+# Discrepancy with Zou and our NN implementation
+
+Shengwen identified two cases in which Zou's NN implementation is good (0.84, 0.97 accuracy) and our accuracy is ~0.4.
+We want to simulate other datasets with the same settings (different seed) to compare the performance again.
+
+Case 1:
+```shell
+## b=0.1, a=10b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-case1-1
+julia simulate-zou2019.jl XXXXX 8000 0.1 10 1.0
+```
+
+Case 2:
+```shell
+## b=1, a=10b, c=b
+cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-case2-1
+julia simulate-zou2019.jl XXXXX 8000 1 10 1.0
+```
