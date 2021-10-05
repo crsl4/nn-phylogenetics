@@ -423,7 +423,7 @@ class ConvCircBlock(nn.Module):
         # adding the padding
         x = torch.cat([x[:,:,-self.padding:], 
                        x[:,:,:], 
-                       x[:,:,:self.padding]], axis = 2)
+                       x[:,:,:self.padding]], dim = 2)
         # todo: use the torch.nn.functional.pad function
 
         x = self.conv1(x)
@@ -641,7 +641,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, input_shape, encoded_dim, embed_dim = 4, batch_norm = True, 
-                 act_fn = torch.tanh, norm_first= True, drop_out_bool = False):
+                 act_fn = torch.tanh, norm_first= True, dropout_bool = False, dropout_prob = 0.2):
         super(Decoder, self).__init__()
 
         # TODO: add flag for using the batch normalization 
