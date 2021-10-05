@@ -152,6 +152,12 @@ inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :trunc_length])
 outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :,:trunc_length])
 
+
+## freeing space 
+del seq_string
+del labels
+del mats
+
 # # creating the dataset objects
 # datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 # datasetTest = data.TensorDataset(inputTest, outputTest) 
@@ -417,12 +423,12 @@ autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
 dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=8)#,
+                                              num_workers=2)#,
                                               #pin_memory=False )
 
 dataloader_test_auto = torch.utils.data.DataLoader(dataset_test_auto, 
                                              batch_size=batch_size,
-                                             num_workers=8,
+                                             num_workers=2,
                                              shuffle=True)
 
 
@@ -628,12 +634,12 @@ datasetTest = SequenceDataSet(inputTest, outputTest)
 dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=8)
+                                              num_workers=2)
                                               # pin_memory=True )
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                              batch_size=batch_size,
-                                             num_workers=8,
+                                             num_workers=2,
                                              shuffle=True)
 # we add an embedding layer so we don't need to do 
 # the one hot encoding
@@ -656,17 +662,29 @@ class _AutoEncoderEmbedding(torch.nn.Module):
         # return as a 1D vector 
         return x.view(x.shape[0],self.chnl_dim, self.encoded_dim//self.chnl_dim )
 
+
+## TODO: there is an issue with the padding for torch.script
+# # we will use the pretrained encoder for the embedding
+# D = torch.jit.script(_AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim))
+
+# # non-linear merge is just a bunch of dense ResNets 
+# M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True))
+# M2 = torch.jit.script(_NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True))
+
+# # model using the permutations
+# model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
+
 # we will use the pretrained encoder for the embedding
-D = torch.jit.script(_AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim))
+D = _AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim)
 
 # non-linear merge is just a bunch of dense ResNets 
-M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True))
-M2 = torch.jit.script(_NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True))
+M1 = _NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True)
+M2 = _NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True)
 
 # model using the permutations
-model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
+model = _PermutationModule(D, M1, M2).to(device)
 
-## TODO: add the torch script to make the algorithm faster (hopefully)
+
 
 # specify loss function
 criterion = torch.nn.CrossEntropyLoss(reduction='sum')
