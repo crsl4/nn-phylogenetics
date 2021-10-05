@@ -103,6 +103,39 @@ class _NonLinearEmbedding(torch.nn.Module):
         return x.view(x.shape[0], -1)
 
 
+class _NonLinearEmbeddingFourier(torch.nn.Module):
+
+    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
+        super().__init__()
+        
+        self.num_levels = np.int(np.floor(np.log((input_dim*chnl_dim)/emb_dim)/np.log(2)))
+
+        blocks = []
+        blocks.append(torch.nn.Conv1d(input_channel, chnl_dim, 1))
+        blocks.append(torch.nn.BatchNorm1d(chnl_dim)) 
+        for ii in range(self.num_levels):
+            blocks.append(_ResidueModule(chnl_dim))
+            blocks.append(torch.nn.AvgPool1d(2))
+        
+        self.seq = nn.Sequential(*blocks)
+
+        dims = np.int(input_dim//2**self.num_levels)
+
+
+        self.dense = _ResidueModuleDense(dims*chnl_dim,emb_dim)
+        self.dense2 = _ResidueModuleDense(emb_dim,emb_dim)
+
+    def forward(self, x):
+
+        x = self.seq(x)
+        x = x.view(x.shape[0], -1)
+        x = self.dense(x)
+        x = self.dense2(x)
+
+        # return as a 1D vector 
+        return x.view(x.shape[0], -1)
+
+
 # perhaps we need to use conv nets for merges too. 
 # using dense networks seems to make the problems hard to optimize
 class _NonLinearMerge(torch.nn.Module):
@@ -249,19 +282,25 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
 
 
 class _NonLinearMergeConv(torch.nn.Module):
+    """Class for merging two different branches"""
 
-    def __init__(self, chnl_dim, kernel_size, depth):
+    def __init__(self, chnl_dim, kernel_size, depth,
+                 dropout_bool=False, dropout_prob=0.2):
         super().__init__()
         
         blocks_mid = []
         for ii in range(depth//2):
             blocks_mid.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            if dropout_bool:
+                blocks_mid.append(nn.Dropout(dropout_prob))
         
         self.layers_mid = nn.Sequential(*blocks_mid)
 
         blocks_embed = []
         for ii in range(depth//2):
             blocks_embed.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            if dropout_bool:
+                blocks_embed.append(nn.Dropout(dropout_prob))
         
         self.layers_embed = nn.Sequential(*blocks_embed)
 
@@ -316,18 +355,27 @@ class _NonLinearMergeConv(torch.nn.Module):
 
 class _NonLinearScoreConv(torch.nn.Module):
 
-    def __init__(self, chnl_dim, kernel_size, depth):
+    def __init__(self, chnl_dim, kernel_size, depth,
+                 dropout_bool = False, dropout_prob = 0.2):
         super().__init__()
-        
+         
+
+        if dropout_bool:
+            print("using dropout layers")
+
         blocks_merge = []
         for ii in range(depth//2):
             blocks_merge.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            if dropout_bool:
+                blocks_merge.append(nn.Dropout(dropout_prob))
         
         self.layers_merge = nn.Sequential(*blocks_merge)
 
         blocks_score = []
         for ii in range(depth//2):
             blocks_score.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            if dropout_bool:
+                blocks_score.append(nn.Dropout(dropout_prob))
 
         blocks_score.append(torch.nn.AdaptiveAvgPool1d(1))
         
@@ -355,9 +403,11 @@ class _NonLinearScoreConv(torch.nn.Module):
 
 ## here are the ResNet modules used for the Unet
 class ConvCircBlock(nn.Module):
+    """class that computes a 1D convolution by a periodic padding"""
     def __init__(self, in_layer, out_layer, 
                  kernel_size, stride, dilation, bias=False):
         super(ConvCircBlock, self).__init__()
+
 
         self.padding = kernel_size//2
 
@@ -374,6 +424,8 @@ class ConvCircBlock(nn.Module):
         x = torch.cat([x[:,:,-self.padding:], 
                        x[:,:,:], 
                        x[:,:,:self.padding]], axis = 2)
+        # todo: use the torch.nn.functional.pad function
+
         x = self.conv1(x)
         x = self.bn(x)
         out = self.relu(x)
@@ -395,6 +447,7 @@ class ResNetBlock(nn.Module):
         x_re = self.cbr2(x_re)
         # x_re = self.seblock(x_re)
         x_out = torch.add(x, x_re)
+
         return x_out      
 
     
@@ -515,3 +568,220 @@ class ScalarBlock(nn.Module):
 
         return x_out
 
+
+
+
+################################################################
+#  Autoencoder layers
+################################################################
+
+class Encoder(nn.Module):
+    def __init__(self, input_shape, encoded_dim, num_layers = 3, embed_dim = 4, batch_norm = True, 
+                 act_fn=torch.tanh, norm_first= True, dropout_bool = False, dropout_prob = 0.2):
+        super(Encoder, self).__init__()
+        ## encoder layers ##
+        
+        # check that the input is divisible by the propery power of the 
+        # number of layers
+        assert input_shape%(2**num_layers) == 0
+
+        self.num_layers = num_layers
+        self.batch_norm = batch_norm
+        self.act_fn = act_fn
+        
+        # todo: apply the normalization either 
+        # before of after the activation 
+        self.norm_first = norm_first
+        self.dropout_bool = dropout_bool
+
+        self.layers_conv = []
+        self.batch_norm = []
+
+        # adding the embedding layer 
+        self.emb = nn.Conv1d(20, embed_dim, 1, padding=0) 
+        self.batch_norm_emb = nn.BatchNorm1d(embed_dim)
+
+        for ii in range(num_layers):
+            self.layers_conv.append(nn.Conv1d(embed_dim*(2**ii), 
+                                              embed_dim*(2**(ii+1)), 
+                                              3, padding=1))
+            self.batch_norm.append(nn.BatchNorm1d(embed_dim*(2**(ii+1))))
+
+
+        # to use later
+        self.drop_out = torch.nn.Dropout(dropout_prob)
+
+        ## dense layers
+        self.dense = nn.Linear((input_shape*embed_dim), encoded_dim)
+
+
+    def forward(self, x):
+        ## encode ##
+        
+        # we perform a simple embedding a this point
+        x = self.act_fn(self.emb(x))
+        if self.batch_norm:
+            x = self.batch_norm_emb(x)
+
+
+        for ii in range(self.num_layers):
+            x = self.act_fn(self.layers_conv[ii](x))
+            if self.batch_norm:
+                x = self.batch_norm[ii](x)
+            if self.dropout_bool:
+                x = self.drop_out(x)
+
+            # pooling the information
+            x = self.pool(x) 
+ 
+        x = self.dense(x.view(x.shape[0], -1))
+        
+        # compressed representation
+        return x
+
+class Decoder(nn.Module):
+    def __init__(self, input_shape, encoded_dim, embed_dim = 4, batch_norm = True, 
+                 act_fn = torch.tanh, norm_first= True, drop_out_bool = False):
+        super(Decoder, self).__init__()
+
+        # TODO: add flag for using the batch normalization 
+        # either after or before
+        ## decoder layers ##
+        self.batch_norm = batch_norm
+        self.act_fn = act_fn
+        self.embed_dim = embed_dim
+        self.drop_out_bool = drop_out_bool
+        
+
+        self.dense = nn.Linear(encoded_dim, input_shape*embed_dim)
+
+        ## a kernel of 2 and a stride of 2 will increase the spatial dims by 2
+        self.t_conv1 = nn.ConvTranspose1d(4*embed_dim, 2*embed_dim, 2, stride=2)
+        self.t_conv2 = nn.ConvTranspose1d(2*embed_dim, embed_dim, 2, stride=2)
+        
+        self.conv3 = nn.Conv1d(embed_dim, 20, 1, padding=0)  
+        
+        self.batch_norm1 = nn.BatchNorm1d(4*embed_dim)
+        self.batch_norm2 = nn.BatchNorm1d(2*embed_dim)
+        self.batch_norm3 = nn.BatchNorm1d(embed_dim)
+
+        self.drop_out = torch.nn.Dropout(0.2)
+
+
+    def forward(self, x):
+        ## decode ##
+
+        x = self.act_fn(self.dense(x))
+        x = x.view(x.shape[0], 4*self.embed_dim, -1)
+        
+        if self.batch_norm:
+            x = self.batch_norm1(x)
+        
+        if self.drop_out_bool:
+            x = self.drop_out(x)
+
+
+        x = self.act_fn(self.t_conv1(x))
+        
+        if self.batch_norm:
+            x = self.batch_norm2(x)
+        
+        if self.drop_out_bool:
+            x = self.drop_out(x)
+
+        x = self.act_fn(self.t_conv2(x))
+        
+        if self.batch_norm:
+            x = self.batch_norm3(x)
+        
+        if self.drop_out_bool:
+            x = self.drop_out(x)
+
+        x = self.conv3(x)
+
+        # output layer (with sigmoid for scaling from 0 to 1)
+        return torch.sigmoid(x)
+    
+
+class AutoEncoder(nn.Module):
+    def __init__(self, encoder, decoder):
+        super(AutoEncoder, self).__init__()
+
+        ## decoder layers ##
+    
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, x):
+        
+        ## encode ##
+        x = self.encoder(x)
+        ## decode ##
+        x = self.decoder(x)
+                
+        return x
+
+
+
+
+################################################################
+#  1d fourier layer
+################################################################
+class SpectralConv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, modes1):
+        super(SpectralConv1d, self).__init__()
+
+        """
+        1D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        """
+
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.modes1 = modes1  #Number of Fourier modes to multiply, at most floor(N/2) + 1
+
+        self.scale = (1 / (in_channels*out_channels))
+        self.weights1 = nn.Parameter(self.scale * 
+                                     torch.rand(in_channels, 
+                                                out_channels, 
+                                                self.modes1, 
+                                                dtype=torch.cfloat))
+
+    # Complex multiplication
+    def compl_mul1d(self, input, weights):
+        # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
+        return torch.einsum("bix,iox->box", input, weights)
+
+    def forward(self, x):
+        batchsize = x.shape[0]
+        #Compute Fourier coeffcients up to factor of e^(- something constant)
+        x_ft = torch.fft.rfft(x)
+
+        ## Multiply relevant Fourier modes
+        # create the output, in which the high frequency modes are already zeroeth
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(-1)//2 + 1,  device=x.device, dtype=torch.cfloat)
+
+        # compute the multiplication and add to the lowest frequency modes
+        out_ft[:, :, :self.modes1] = self.compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
+
+        #Return to physical space
+        x = torch.fft.irfft(out_ft, n=x.size(-1))
+
+        return x
+
+class SpectralTwoScalesResNet1d(nn.Module):
+
+    def __init__(self, in_channels, out_channels, modes1):
+        super(SpectralConv1d, self).__init__()
+
+        self.fourier_layer = SpectralConv1d(in_channels, out_channels, modes1)
+        self.conv1d = nn.Conv1d(self.width, self.width, 1)
+
+    def forward(x):
+
+        x1 = self.fourier_layer(x)
+        x2 = self.conv1d(x)
+        x = x1 + x2
+        x = F.gelu(x)
+
+        return x
