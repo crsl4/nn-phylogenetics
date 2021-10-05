@@ -533,6 +533,29 @@ for epoch in range(1, nEpochs+1):
                                                                  str(batch_size)))
 
 
+# here we compute the accuracy of the converged network in the training data 
+autoencoder.eval()
+correct, total = 0, 0
+
+for genes_one_hot, genes in dataloader_train_auto:
+    #send to the device (either cpu or gpu)
+    genes_one_hot, genes = genes_one_hot.float().to(device), genes.to(device)
+    # reshape them 
+    genes_one_hot = genes_one_hot.view(genes_one_hot.shape[0]*4, 20, -1)
+    genes = genes.view(genes.shape[0]*4, -1)
+
+    # forward pass: compute predicted outputs by passing inputs to the autoencoder
+    genes_auto = autoencoder(genes_one_hot)
+    # calculate the loss
+    _, predicted = torch.max(genes_auto, 1)
+    
+    total += genes.size(0)*genes.size(1)
+    correct += (predicted == genes).sum().item()
+
+accuracyTest = correct/total
+
+print('Ttrain accuracy: {:.6f}'.format(accuracyTest))
+
 
 
 class _PermutationModule(torch.nn.Module):
@@ -634,14 +657,14 @@ class _AutoEncoderEmbedding(torch.nn.Module):
         return x.view(x.shape[0],self.chnl_dim, self.encoded_dim//self.chnl_dim )
 
 # we will use the pretrained encoder for the embedding
-D = _AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim)
+D = torch.jit.script(_AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim))
 
 # non-linear merge is just a bunch of dense ResNets 
-M1 = _NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True)
-M2 = _NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True)
+M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True))
+M2 = torch.jit.script(_NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True))
 
 # model using the permutations
-model = _PermutationModule(D, M1, M2).to(device)
+model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
 
 ## TODO: add the torch script to make the algorithm faster (hopefully)
 
