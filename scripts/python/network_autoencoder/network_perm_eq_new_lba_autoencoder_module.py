@@ -194,7 +194,6 @@ del mats
 dataset_train_auto = SequenceEncoderDataSet(inputTrain) 
 dataset_test_auto = SequenceEncoderDataSet(inputTest) 
 
-    
 # building the simple encoder-decoder, and using a torch script to 
 # accelerate the computation
 
@@ -204,7 +203,6 @@ dataset_test_auto = SequenceEncoderDataSet(inputTest)
 # decoder = torch.jit.script(Decoder(trunc_length, encoded_dim, 
 #                                    embed_dim=20, batch_norm=True, 
 #                                    act_fn = F.elu))
-
 
 encoded_dim = embd_dim*chnl_dim
 encoder_kernel_size = 3
@@ -221,23 +219,21 @@ decoder = Decoder(trunc_length, encoded_dim,
                   num_layers=3, embed_dim =embd_dim, 
                   batch_norm=True, act_fn=F.elu, 
                   norm_first=True, dropout_bool = True, 
-                  dropout_prob=0.2).to(device)
-
-print("number of parameters for the encoder is %d"%count_parameters(encoder))
-print("number of parameters for the decoder is %d"%count_parameters(decoder))
-    
+                  dropout_prob=0.2).to(device) 
 
 # autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
 autoencoder = AutoEncoder(encoder, decoder)
 
-    
-# building the data sets (no need for special collate function)
-dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
-                                              batch_size=batch_size,
-                                              shuffle=True, 
-                                              num_workers=num_workers)#,
-                                              #pin_memory=False )
 
+print("number of parameters for the encoder is %d"%\
+      count_parameters(encoder))
+print("number of parameters for the decoder is %d"%\
+      count_parameters(decoder))
+print("number of parameters for the autoencoder is %d"%\
+      count_parameters(autoencoder))
+   
+
+# defining the Test data loader    
 dataloader_test_auto = torch.utils.data.DataLoader(dataset_test_auto, 
                                              batch_size=10*batch_size,
                                              num_workers=num_workers,
@@ -391,6 +387,10 @@ for batch_size_loc, n_epochs in zip(batch_size_array,
     print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
                                                      accuracyTest))
 
+
+# we free up memory
+del dataloader_train_auto
+del dataloader_test_auto
 
 class _PermutationModule(torch.nn.Module):
 
