@@ -18,7 +18,6 @@ from os import path
 import time
 
 
-
 sys.path.insert(0, '../')
 
 from modules import _ResidueModule
@@ -62,6 +61,13 @@ lr_steps = dataJson["lrSteps"]          # number of steps for the scheduler
 chnl_dim = dataJson["channel_dimension"]
 embd_dim = dataJson["embedding_dimension"]
 
+
+if "random_seed" in dataJson:
+    torch.manual_seed(dataJson["random_seed"])
+else:
+    torch.manual_seed(0)
+
+
 if "summaryFile" in dataJson:
     summary_file = dataJson["summaryFile"]   # file in which we 
                                              # summarize the end result
@@ -91,6 +97,7 @@ print("Loading Sequence Data in " + mat_file, flush = True)
 print("Loading Label Data in " + label_file, flush = True)
 
 
+# function to count parameters
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -295,6 +302,8 @@ M2 = _NonLinearScoreConv(chnl_dim, kernel_size, 6,
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
+
+print("number of parameters for the model is %d"%count_parameters(model))
 
 # specify loss function
 criterion = torch.nn.CrossEntropyLoss(reduction='mean')

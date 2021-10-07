@@ -13,6 +13,7 @@ import itertools
 import json
 import sys
 from os import path
+import time 
 
 sys.path.insert(0, '../')
 
@@ -56,6 +57,12 @@ lr_steps = dataJson["lrSteps"]          # number of steps for the scheduler
 
 chnl_dim = dataJson["channel_dimension"]
 embd_dim = dataJson["embedding_dimension"]
+
+# imposing a given random seed for reproducibility
+if "random_seed" in dataJson:
+    torch.manual_seed(dataJson["random_seed"])
+else:
+    torch.manual_seed(0)
 
 if "summaryFile" in dataJson:
     summary_file = dataJson["summaryFile"]   # file in which we 
@@ -272,6 +279,9 @@ M2 = _NonLinearScoreConv(chnl_dim, 3, 6)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
+
+# counting the total number of parameters
+print("number of parameters for the model is %d"%count_parameters(model))
 
 # specify loss function
 criterion = torch.nn.CrossEntropyLoss(reduction='mean')

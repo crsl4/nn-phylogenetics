@@ -2,7 +2,7 @@
     "with_distrib":     false,
     "_comment":         " model parameters",
     "ngpu":              1,
-    "lr":                0.0001,
+    "lr":                0.001,
     "batchSize":         128, 
     "modelRoot":         "best_models",
     "dataRoot":          "../../../data/new-lba",
@@ -15,5 +15,5 @@
     "gamma":             0.98,
     "lrSteps":           10,
     "channel_dimension":   5,
-    "embedding_dimension":   128   
+    "embedding_dimension":  128   
 }
