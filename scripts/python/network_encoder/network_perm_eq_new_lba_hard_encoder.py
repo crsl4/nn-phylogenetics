@@ -84,6 +84,9 @@ else :
 # number of workers for the data loaders
 num_workers = 2
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 print("=================================================\n")
 
@@ -300,6 +303,8 @@ encoder = Encoder(trunc_length, encoded_dim,
                   norm_first=True, dropout_bool = True, 
                   dropout_prob=0.2).to(device)
 
+print("number of parameters for the encoder is %d"%count_parameters(encoder))
+
 # we will use the pretrained encoder for the embedding
 D = _EncoderEmbedding(encoder, encoded_dim, chnl_dim).to(device)
 
@@ -310,6 +315,7 @@ M2 = _NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True).to(device)
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
 
+print("number of parameters for the model is %d"%count_parameters(model))
 
 
 # specify loss function

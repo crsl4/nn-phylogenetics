@@ -34,7 +34,6 @@ from modules import _NonLinearEmbeddingConv
 from utilities import SequenceDataSet
 from utilities import SequenceEncoderDataSet
 
-
 nameScript = sys.argv[0].split('/')[-1]
 
 # we are going to give all the arguments using a Json file
@@ -89,6 +88,8 @@ if "num_stages" in dataJson:
 else :
     num_stages = 5
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # number of workers for the data loaders
 num_workers = 2
@@ -205,7 +206,7 @@ dataset_test_auto = SequenceEncoderDataSet(inputTest)
 
 
 encoded_dim = embd_dim*chnl_dim
-encoder_kernel_size = 5
+encoder_kernel_size = 3
 
 encoder = Encoder(trunc_length, encoded_dim, 
                   kernel_size=encoder_kernel_size, 
@@ -220,6 +221,10 @@ decoder = Decoder(trunc_length, encoded_dim,
                   batch_norm=True, act_fn=F.elu, 
                   norm_first=True, dropout_bool = True, 
                   dropout_prob=0.2).to(device)
+
+print("number of parameters for the encoder is %d"%count_parameters(encoder))
+print("number of parameters for the decoder is %d"%count_parameters(decoder))
+    
 
 # autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
 autoencoder = AutoEncoder(encoder, decoder)
@@ -482,6 +487,8 @@ M2 = _NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
+
+print("number of parameters for the model is %d"%count_parameters(model))
 
 # specify loss function
 criterion = torch.nn.CrossEntropyLoss(reduction='mean')
