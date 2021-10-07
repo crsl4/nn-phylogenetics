@@ -258,7 +258,8 @@ class _NonLinearScore(torch.nn.Module):
 
 class _NonLinearEmbeddingConv(torch.nn.Module):
 
-    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim, kernel_size=1):
+    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim, kernel_size=1,
+                dropout_bool=False, dropout_prob=0.2):
         super().__init__()
         
         self.chnl_dim = chnl_dim
@@ -270,8 +271,17 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
         for ii in range(self.num_levels):
             blocks.append(_ResidueModule(chnl_dim,\
                                          kernel_size=kernel_size))
+            # adding dropout layers 
+            if dropout_bool:
+                blocks.append(nn.Dropout(dropout_prob))
+
             blocks.append(_ResidueModule(chnl_dim,\
                                          kernel_size=kernel_size))
+
+            # adding dropout layers 
+            if dropout_bool:
+                blocks.append(nn.Dropout(dropout_prob))
+
             blocks.append(torch.nn.AvgPool1d(2))
         
         self.seq = nn.Sequential(*blocks)
@@ -304,7 +314,7 @@ class _NonLinearMergeConv(torch.nn.Module):
 
         blocks_embed = []
         for ii in range(depth//2):
-            blocks_embed.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            blocks_embed.append(ResNetBlock(chnl_dim, kernel_size, act_fn=act_fn))
             if dropout_bool:
                 blocks_embed.append(nn.Dropout(dropout_prob))
         
@@ -411,7 +421,7 @@ class ConvCircBlock(nn.Module):
     def __init__(self, in_layer, out_layer, 
                  kernel_size, stride, dilation, 
                  bias=True, act_fn = F.relu):
-        super(ConvCircBlock, self).__init__()
+        super().__init__()
 
 
         self.padding = kernel_size//2

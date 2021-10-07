@@ -299,18 +299,31 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 
 # defining the models
 # this is harwired for now
+jit = False
+if jit: 
+    D  = torch.jit.script(_NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
+                             kernel_size=kernel_size_emb, dropout_bool=True)).to(device)
+    # non-linear merge is just a bunch of dense ResNets 
+    M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, kernel_size, 6, 
+                             dropout_bool=True, act_fn=F.relu)).to(device)
 
-D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
-                             kernel_size = kernel_size_emb)
-# non-linear merge is just a bunch of dense ResNets 
-M1 = _NonLinearMergeConv(chnl_dim, kernel_size, 6, 
-                         dropout_bool=True, act_fn=F.relu)
+    M2 =torch.jit.script(_NonLinearScoreConv(chnl_dim, kernel_size, 6, 
+                             dropout_bool=True, act_fn = F.relu)).to(device)
 
-M2 = _NonLinearScoreConv(chnl_dim, kernel_size, 6, 
-                         dropout_bool=True, act_fn = F.relu)
+    # model using the permutations
+    model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
 
-# model using the permutations
-model = _PermutationModule(D, M1, M2).to(device)
+else:
+    D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
+                                 kernel_size=kernel_size_emb, dropout_bool=True)
+    # non-linear merge is just a bunch of dense ResNets 
+    M1 = _NonLinearMergeConv(chnl_dim, kernel_size, 6, 
+                             dropout_bool=True, act_fn=F.relu)
+    M2 = _NonLinearScoreConv(chnl_dim, kernel_size, 6, 
+                             dropout_bool=True, act_fn = F.relu)
+    # model using the permutations
+    model = _PermutationModule(D, M1, M2).to(device)
+
 
 print("number of parameters for the model is %d"%count_parameters(model))
 
