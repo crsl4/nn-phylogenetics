@@ -325,80 +325,121 @@ exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
 # model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
 
+batch_size_array = [batch_size*2**i for i in range(num_stages)] 
+base_epochs = int(nEpochs/np.sum([2**i for i in range(num_stages)]))
+n_epochs_array = [base_epochs*2**i for i in range(num_stages)] 
+
+
+# we only define the data loaader for the test data only once
+dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
+                                            batch_size=10*batch_size,
+                                            num_workers=num_workers,
+                                            shuffle=True)
+
+
 print("Starting Training Loop")
 
-maxAccuracy = 0
+for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
 
-for epoch in range(1, nEpochs+1):
-    # monitor training loss
-    train_loss = 0.0
-    model.train()
-    ###################
-    # train the model #
-    ###################
-    for genes, quartets_batch in dataloaderTrain:
-        #send to the device (either cpu or gpu)
-        genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
-        # clear the gradients of all optimized variables
-        optimizer.zero_grad()
-        # forward pass: compute predicted outputs by passing inputs to the model
-        quartetsNN = model(genes)
-        # calculate the loss
-        loss = criterion(quartetsNN, quartets_batch)
-        # backward pass: compute gradient of the loss with respect to model parameters
-        loss.backward()
-        # perform a single optimization step (parameter update)
-        optimizer.step()
-        # update running training loss
-        train_loss += loss.item()
+    # building the data sets (no need for special collate function)
+    dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
+                                                  batch_size=batch_size_loc,
+                                                  shuffle=True, 
+                                                  num_workers=num_workers)
+                                                  # pin_memory=True )
 
-    # print avg training statistics 
-    train_loss = train_loss/len(dataloaderTrain)
-    print('Epoch: {} \tLearning rate: {:.6f} \tTraining Loss: {:.6f}'.format(
-        epoch, 
-        optimizer.param_groups[0]['lr'],
-        train_loss
-        ), flush=True)
 
-    # advance the step in the scheduler
-    exp_lr_scheduler.step() 
+    maxAccuracy = 0
 
-    # we compute the test accuracy every 10 epochs 
-    if epoch % 10 == 0 :
-
-        model.eval()
-        correct, total = 0, 0
-
-        for genes, quartets_batch in dataloaderTest:
+    for epoch in range(1, n_epochs+1):
+        # monitor training loss
+        train_loss = 0.0
+        model.train()
+        ###################
+        # train the model #
+        ###################
+        for genes, quartets_batch in dataloaderTrain:
             #send to the device (either cpu or gpu)
             genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
+            # clear the gradients of all optimized variables
+            optimizer.zero_grad()
             # forward pass: compute predicted outputs by passing inputs to the model
             quartetsNN = model(genes)
             # calculate the loss
-            _, predicted = torch.max(quartetsNN, 1)
-            
-            total += quartets_batch.size(0)
-            correct += (predicted == quartets_batch).sum().item()
+            loss = criterion(quartetsNN, quartets_batch)
+            # backward pass: compute gradient of the loss with respect to model parameters
+            loss.backward()
+            # perform a single optimization step (parameter update)
+            optimizer.step()
+            # update running training loss
+            train_loss += loss.item()
 
-        accuracyTest = correct/total
+        # print avg training statistics 
+        train_loss = train_loss/len(dataloaderTrain)
+        print('Epoch: {} \tLearning rate: {:.6f} \tTraining Loss: {:.6f}'.format(
+            epoch, 
+            optimizer.param_groups[0]['lr'],
+            train_loss
+            ), flush=True)
 
-        print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
-                                                         accuracyTest))
+        # advance the step in the scheduler
+        exp_lr_scheduler.step() 
 
-        if accuracyTest > maxAccuracy:
-            maxAccuracy = accuracyTest
-            torch.save(model.state_dict(), modelRoot + "/" +
-                "saved_{}_{}_lr_{}_batch_{}_lba_best.pth".format(nameScript.split(".")[0],
-                                                                 nameJson.split(".")[0],
+        # we compute the test accuracy every 10 epochs 
+        if epoch % 10 == 0 :
+
+            model.eval()
+            correct, total = 0, 0
+
+            for genes, quartets_batch in dataloaderTest:
+                #send to the device (either cpu or gpu)
+                genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
+                # forward pass: compute predicted outputs by passing inputs to the model
+                quartetsNN = model(genes)
+                # calculate the loss
+                _, predicted = torch.max(quartetsNN, 1)
+                
+                total += quartets_batch.size(0)
+                correct += (predicted == quartets_batch).sum().item()
+
+            accuracyTest = correct/total
+
+            print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
+                                                             accuracyTest))
+
+            if accuracyTest > maxAccuracy:
+                maxAccuracy = accuracyTest
+                torch.save(model.state_dict(), modelRoot + "/" +
+                    "saved_{}_{}_lr_{}_batch_{}_lba_best.pth".format(nameScript.split(".")[0],
+                                                                     nameJson.split(".")[0],
+                                                                    str(lr), 
+                                                                     str(batch_size)))
+
+    model.eval()
+    correct, total = 0, 0
+
+    for genes, quartets_batch in dataloaderTrain:
+        #send to the device (either cpu or gpu)
+        genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
+        # forward pass: compute predicted outputs by passing inputs to the model
+        quartetsNN = model(genes)
+        # calculate the loss
+        _, predicted = torch.max(quartetsNN, 1)
+        
+        total += quartets_batch.size(0)
+        correct += (predicted == quartets_batch).sum().item()
+
+    accuracyTrain = correct/total
+
+    print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
+                                                     accuracyTrain))
+
+
+    torch.save(model.state_dict(), modelRoot + "/" +
+               "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
+                                                                nameJson.split(".")[0],
                                                                 str(lr), 
-                                                                 str(batch_size)))
-
-
-torch.save(model.state_dict(), modelRoot + "/" +
-           "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
-                                                            nameJson.split(".")[0],
-                                                            str(lr), 
-                                                            str(batch_size)))
+                                                                str(batch_size)))
 
 if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
