@@ -27,6 +27,10 @@ from modules import _NonLinearScoreConv
 from modules import _NonLinearMergeConv
 from modules import _NonLinearEmbeddingConv
 
+# importing data custom data sets
+from utilities import SequenceDataSet
+from utilities import SequenceEncoderDataSet
+
 nameScript = sys.argv[0].split('/')[-1]
 
 # we are going to give all the arguments using a Json file
@@ -68,6 +72,18 @@ if "summaryFile" in dataJson:
                                              # summarize the end result
 else :
     summary_file = "summary_file.txt"
+
+# the default number of stages
+if "num_stages" in dataJson:
+    num_stages = dataJson["num_stages"]   # file in which we 
+                                             # summarize the end result
+else :
+    num_stages = 5
+
+
+# number of workers for the data loaders
+num_workers = 2
+
 
 print("=================================================\n")
 
@@ -161,51 +177,6 @@ inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :,:trunc_length])
 del seq_string
 del labels
 del mats
-
-# # creating the dataset objects
-# datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
-# datasetTest = data.TensorDataset(inputTest, outputTest) 
-
-# We define our custom Sequence DataSet, which provides the 
-# the one-hot encoding on the fly.
-class SequenceDataSet(torch.utils.data.Dataset):
-    """Face Landmarks dataset."""
-
-    def __init__(self, sequences, labels, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        self.labels = labels
-        # number of characters
-        self.n_char = n_char
-
-    def __len__(self):
-        return self.labels.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        label = self.labels[idx]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, label)
-
-        return sample
-
 
 
 class _PermutationModule(torch.nn.Module):
@@ -319,9 +290,15 @@ class _EncoderEmbedding(torch.nn.Module):
 # model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
 
 encoded_dim = embd_dim*chnl_dim
+encoder_kernel_size = 3
 
-encoder = Encoder(trunc_length, encoded_dim, num_layers=3, embed_dim = 4, batch_norm = True, 
-                 act_fn=F.elu, norm_first= True, dropout_bool = True, dropout_prob = 0.2).to(device)
+
+encoder = Encoder(trunc_length, encoded_dim, 
+                  kernel_size=encoder_kernel_size, 
+                  num_layers=3, embed_dim = 4, 
+                  batch_norm=True, act_fn=F.elu, 
+                  norm_first=True, dropout_bool = True, 
+                  dropout_prob=0.2).to(device)
 
 # we will use the pretrained encoder for the embedding
 D = _EncoderEmbedding(encoder, encoded_dim, chnl_dim).to(device)
@@ -336,7 +313,7 @@ model = _PermutationModule(D, M1, M2).to(device)
 
 
 # specify loss function
-criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+criterion = torch.nn.CrossEntropyLoss(reduction='mean')
 
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)

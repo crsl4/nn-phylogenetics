@@ -70,6 +70,10 @@ chnl_dim = dataJson["channel_dimension"]
 embd_dim = dataJson["embedding_dimension"]
 encoded_dim = dataJson["encoded dimension"]
 
+if "encoder_kernel_size" in dataJson:
+    encoder_kernel_size = dataJson["encoder_kernel_size"]
+else: 
+    encoder_kernel_size = 3
 
 if "summaryFile" in dataJson:
     summary_file = dataJson["summaryFile"]   # file in which we 
