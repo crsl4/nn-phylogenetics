@@ -26,6 +26,9 @@ from modules import _NonLinearScoreConv
 from modules import _NonLinearMergeConv
 from modules import _NonLinearEmbeddingConv
 
+# importing data custom data sets
+from utilities import SequenceDataSet
+from utilities import SequenceEncoderDataSet
 
 nameScript = sys.argv[0].split('/')[-1]
 
@@ -77,6 +80,9 @@ if "num_stages" in dataJson:
 else :
     num_stages = 5
 
+
+# number of workers for the data loaders
+num_workers = 2
 
 
 print("=================================================\n")
@@ -170,82 +176,7 @@ inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :,:trunc_length])
 # datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 # datasetTest = data.TensorDataset(inputTest, outputTest) 
 
-# We define our custom Sequence DataSet, which provides the 
-# the one-hot encoding on the fly.
-class SequenceDataSet(torch.utils.data.Dataset):
-    """Face Landmarks dataset."""
 
-    def __init__(self, sequences, labels, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        self.labels = labels
-        # number of characters
-        self.n_char = n_char
-
-    def __len__(self):
-        return self.labels.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        label = self.labels[idx]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, label)
-
-        return sample
-
-class SequenceEncoderDataSet(torch.utils.data.Dataset):
-    """Data set to generate the matrices with the hot encoding on the fly"""
-
-    def __init__(self, sequences, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        # number of characters
-        self.n_char = n_char
-
-    def __len__(self):
-        return self.sequences.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, sequence_out)
-
-        return sample
-    
     
 # we use this dataset that perform the one_hot encoding on the fly 
 dataset_train_auto = SequenceEncoderDataSet(inputTrain) 
@@ -400,8 +331,12 @@ class AutoEncoder(nn.Module):
 # building the simple encoder-decoder, and using a torch script to 
 # accelerate the computation
 
-encoder = torch.jit.script(Encoder(trunc_length, encoded_dim, embed_dim = 20, batch_norm = True, act_fn = F.elu))
-decoder = torch.jit.script(Decoder(trunc_length, encoded_dim, embed_dim = 20, batch_norm = True, act_fn = F.elu))
+encoder = torch.jit.script(Encoder(trunc_length, encoded_dim, 
+                                   embed_dim=20, batch_norm=True, 
+                                   act_fn = F.elu))
+decoder = torch.jit.script(Decoder(trunc_length, encoded_dim, 
+                                   embed_dim=20, batch_norm=True, 
+                                   act_fn = F.elu))
 
 autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
 
@@ -410,12 +345,12 @@ autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
 dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=8)#,
+                                              num_workers=num_workers)#,
                                               #pin_memory=False )
 
 dataloader_test_auto = torch.utils.data.DataLoader(dataset_test_auto, 
                                              batch_size=10*batch_size,
-                                             num_workers=8,
+                                             num_workers=num_workers,
                                              shuffle=True)
 
 
@@ -450,13 +385,14 @@ n_epochs_array = [base_epochs*2**i for i in range(num_stages)]
 
 print("Starting Training Loop")
 
-for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
+for batch_size_loc, n_epochs in zip(batch_size_array,
+                                    n_epochs_array):
 
     # building the data sets (no need for special collate function)
     dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
                                               batch_size=batch_size_loc,
                                               shuffle=True, 
-                                              num_workers=8)
+                                              num_workers=num_workers)
 
     maxAccuracy = 0
 
@@ -469,7 +405,8 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
         ###################
         for genes_one_hot, genes in dataloader_train_auto:
             #send to the device (either cpu or gpu)
-            genes_one_hot, genes = genes_one_hot.float().to(device), genes.to(device)
+            genes_one_hot, genes = genes_one_hot.float().to(device), 
+                                   genes.to(device)
             # reshape them 
             genes_one_hot = genes_one_hot.view(genes_one_hot.shape[0]*4, 20, -1)
             genes = genes.view(genes.shape[0]*4, -1)
@@ -535,6 +472,33 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
                                                                      nameJson.split(".")[0],
                                                                     str(lr), 
                                                                      str(batch_size)))
+
+
+    #at the end of each stage we compute the training accuracy to compare it 
+    # with the 
+
+    autoencoder.eval()
+    correct, total = 0, 0
+
+    for genes_one_hot, genes in dataloader_train_auto:
+        #send to the device (either cpu or gpu)
+        genes_one_hot, genes = genes_one_hot.float().to(device), genes.to(device)
+        # reshape them 
+        genes_one_hot = genes_one_hot.view(genes_one_hot.shape[0]*4, 20, -1)
+        genes = genes.view(genes.shape[0]*4, -1)
+
+        # forward pass: compute predicted outputs by passing inputs to the autoencoder
+        genes_auto = autoencoder(genes_one_hot)
+        # calculate the loss
+        _, predicted = torch.max(genes_auto, 1)
+        
+        total += genes.size(0)*genes.size(1)
+        correct += (predicted == genes).sum().item()
+
+    accuracyTest = correct/total
+
+    print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
+                                                     accuracyTest))
 
 
 class _PermutationModule(torch.nn.Module):
@@ -657,7 +621,7 @@ n_epochs_array = [base_epochs*2**i for i in range(num_stages)]
 # we only define the data loaader for the test data only once
 dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
                                             batch_size=10*batch_size,
-                                            num_workers=2,
+                                            num_workers=num_workers,
                                             shuffle=True)
 
 
@@ -669,7 +633,7 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
     dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
                                                   batch_size=batch_size_loc,
                                                   shuffle=True, 
-                                                  num_workers=8)
+                                                  num_workers=num_workers)
                                                   # pin_memory=True )
 
 
@@ -738,6 +702,25 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
                                                                      nameJson.split(".")[0],
                                                                     str(lr), 
                                                                      str(batch_size)))
+
+    model.eval()
+    correct, total = 0, 0
+
+    for genes, quartets_batch in dataloaderTrain:
+        #send to the device (either cpu or gpu)
+        genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
+        # forward pass: compute predicted outputs by passing inputs to the model
+        quartetsNN = model(genes)
+        # calculate the loss
+        _, predicted = torch.max(quartetsNN, 1)
+        
+        total += quartets_batch.size(0)
+        correct += (predicted == quartets_batch).sum().item()
+
+    accuracyTrain = correct/total
+
+    print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
+                                                     accuracyTrain))
 
 
     torch.save(model.state_dict(), modelRoot + "/" +

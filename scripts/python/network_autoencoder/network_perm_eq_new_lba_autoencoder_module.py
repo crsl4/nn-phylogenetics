@@ -19,12 +19,21 @@ sys.path.insert(0, '../')
 
 import torch.nn.functional as F
 
+from modules import Encoder
+from modules import Decoder
+from modules import AutoEncoder
+
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
 
 from modules import _NonLinearScoreConv
 from modules import _NonLinearMergeConv
 from modules import _NonLinearEmbeddingConv
+
+# importing data custom data sets
+from utilities import SequenceDataSet
+from utilities import SequenceEncoderDataSet
+
 
 nameScript = sys.argv[0].split('/')[-1]
 
@@ -68,6 +77,7 @@ if "summaryFile" in dataJson:
 else :
     summary_file = "summary_file.txt"
 
+
 # the default number of stages
 if "num_stages" in dataJson:
     num_stages = dataJson["num_stages"]   # file in which we 
@@ -78,6 +88,9 @@ else :
 
 # number of workers for the data loaders
 num_workers = 2
+
+# getting the device number to run the computation
+device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 
 print("=================================================\n")
@@ -108,8 +121,8 @@ seq_lenght = len(seq_string[0])-1
 
 # function to convert string to numbers 
 def convert_string_to_numbers(str, dict):
-    ''' str: is the string to convert, 
-        dict: dictionary with the relative ordering of each char'''
+    """ str: is the string to convert, 
+        dict: dictionary with the relative ordering of each char"""
 
     # create a map iterator using a lambda function
     numbers = map(lambda x: dict[x], str)
@@ -158,7 +171,7 @@ print("Number of testing samples: {}".format(n_test_samples))
 assert n_train_samples + n_test_samples <=  n_samples
 
 # we need to truncate a bit the lenght of the sequences
-trunc_length = 1548
+trunc_length = 1544
 
 # we perform the training/validation splitting
 outputTrain = torch.from_numpy(labels[0:n_train_samples])
@@ -167,283 +180,57 @@ inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :trunc_length])
 outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :,:trunc_length])
 
-
-## freeing space 
-del seq_string
-del labels
-del mats
-
 # # creating the dataset objects
 # datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
 # datasetTest = data.TensorDataset(inputTest, outputTest) 
 
-# We define our custom Sequence DataSet, which provides the 
-# the one-hot encoding on the fly.
-class SequenceDataSet(torch.utils.data.Dataset):
-    """Face Landmarks dataset."""
-
-    def __init__(self, sequences, labels, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        self.labels = labels
-        # number of characters
-        self.n_char = n_char
-
-    def __len__(self):
-        return self.labels.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        label = self.labels[idx]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, label)
-
-        return sample
-
-class SequenceEncoderDataSet(torch.utils.data.Dataset):
-    """Data set to generate the matrices with the hot encoding on the fly"""
-
-    def __init__(self, sequences, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        # number of characters
-        self.n_char = n_char
-
-    def __len__(self):
-        return self.sequences.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, sequence_out)
-
-        return sample
-    
-    
 # we use this dataset that perform the one_hot encoding on the fly 
 dataset_train_auto = SequenceEncoderDataSet(inputTrain) 
 dataset_test_auto = SequenceEncoderDataSet(inputTest) 
-
-### Todo: Build the autoencoder here
-
-# #define the NN architecture, we use a slightly different architecture
-# #define the NN architecture, we use a slightly different architecture
-class Encoder(nn.Module):
-    def __init__(self, input_shape, encoded_dim, embed_dim = 4, batch_norm = True, 
-                 act_fn = torch.tanh, norm_first= True, drop_out_bool = False):
-        super(Encoder, self).__init__()
-        ## encoder layers ##
-        
-        self.batch_norm = batch_norm
-        self.act_fn = act_fn
-        
-        # todo: apply the normalization either 
-        # before of after the activation 
-        self.norm_first = norm_first
-        self.drop_out_bool = drop_out_bool
-        
-        # we perform a simple embedding a this point
-        # there is no comunication in the location of the sequence
-        # only in channel dimension
-        self.conv1 = nn.Conv1d(20, embed_dim, 1, padding=0)  
-        
-        # conv layer (start with embed_dim continue to 2*embed_dim) 3 kernels
-        self.conv2 = nn.Conv1d(embed_dim, 2*embed_dim, 3, padding=1)  
-        
-        # conv layer (depth from 2*embed_dim --> 4*embed_dim), 3x3 kernels
-        self.conv3 = nn.Conv1d(2*embed_dim, 4*embed_dim, 3, padding=1)
-        # pooling layer to reduce x-y dims by two; kernel and stride of 2
-        self.pool = nn.MaxPool1d(2, 2)
-        
-        self.batch_norm0 = nn.BatchNorm1d(embed_dim)
-        self.batch_norm1 = nn.BatchNorm1d(2*embed_dim)
-        self.batch_norm2 = nn.BatchNorm1d(4*embed_dim)
-        
-        # to use later
-        self.drop_out = torch.nn.Dropout(0.2)
-
-        ## dense layers
-        self.dense = nn.Linear((input_shape//4)*(4*embed_dim), encoded_dim)
-
-
-    def forward(self, x):
-        ## encode ##
-        
-        # we perform a simple embedding a this point
-        x = self.act_fn(self.conv1(x))
-        if self.batch_norm:
-            x = self.batch_norm0(x)
-        
-        x = self.act_fn(self.conv2(x))
-        # performing batch normalization
-        if self.batch_norm:
-            x = self.batch_norm1(x)
-        # activation function
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
-
-        # pooling
-        x = self.pool(x)
-        
-        # add second hidden layer
-        x = self.act_fn(self.conv3(x))
-        # performing batch normalization
-        if self.batch_norm:
-            x = self.batch_norm2(x)
-
-        if self.drop_out_bool:
-            x = self.drop_out(x)
-        
-        x = self.pool(x)  
-        
-        x = self.dense(x.view(x.shape[0], -1))
-        
-        # compressed representation
-        return x
-
-class Decoder(nn.Module):
-    def __init__(self, input_shape, encoded_dim, embed_dim = 4, batch_norm = True, 
-                 act_fn = torch.tanh, norm_first= True, drop_out_bool = False):
-        super(Decoder, self).__init__()
-
-        # TODO: add flag for using the batch normalization 
-        # either after or before
-        ## decoder layers ##
-        self.batch_norm = batch_norm
-        self.act_fn = act_fn
-        self.embed_dim = embed_dim
-        self.drop_out_bool = drop_out_bool
-        
-
-        self.dense = nn.Linear(encoded_dim, (input_shape//4)*4*embed_dim)
-
-        ## a kernel of 2 and a stride of 2 will increase the spatial dims by 2
-        self.t_conv1 = nn.ConvTranspose1d(4*embed_dim, 2*embed_dim, 2, stride=2)
-        self.t_conv2 = nn.ConvTranspose1d(2*embed_dim, embed_dim, 2, stride=2)
-        
-        self.conv3 = nn.Conv1d(embed_dim, 20, 1, padding=0)  
-        
-        self.batch_norm1 = nn.BatchNorm1d(4*embed_dim)
-        self.batch_norm2 = nn.BatchNorm1d(2*embed_dim)
-        self.batch_norm3 = nn.BatchNorm1d(embed_dim)
-
-        self.drop_out = torch.nn.Dropout(0.2)
-
-
-    def forward(self, x):
-        ## decode ##
-
-        x = self.act_fn(self.dense(x))
-        x = x.view(x.shape[0], 4*self.embed_dim, -1)
-        
-        if self.batch_norm:
-            x = self.batch_norm1(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
-
-
-        x = self.act_fn(self.t_conv1(x))
-        
-        if self.batch_norm:
-            x = self.batch_norm2(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
-
-        x = self.act_fn(self.t_conv2(x))
-        
-        if self.batch_norm:
-            x = self.batch_norm3(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
-
-        x = self.conv3(x)
-
-        # output layer (with sigmoid for scaling from 0 to 1)
-        return torch.sigmoid(x)
-    
-
-class AutoEncoder(nn.Module):
-    def __init__(self, encoder, decoder):
-        super(AutoEncoder, self).__init__()
-
-        ## decoder layers ##
-    
-        self.encoder = encoder
-        self.decoder = decoder
-
-    def forward(self, x):
-        
-        ## encode ##
-        x = self.encoder(x)
-        ## decode ##
-        x = self.decoder(x)
-                
-        return x
 
     
 # building the simple encoder-decoder, and using a torch script to 
 # accelerate the computation
 
-print("we activate the  drop out layers")
+# encoder = torch.jit.script(Encoder(trunc_length, encoded_dim, 
+#                                    embed_dim=20, batch_norm=True, 
+#                                    act_fn = F.elu))
+# decoder = torch.jit.script(Decoder(trunc_length, encoded_dim, 
+#                                    embed_dim=20, batch_norm=True, 
+#                                    act_fn = F.elu))
 
-encoder = torch.jit.script(Encoder(trunc_length, encoded_dim, 
-                                   embed_dim = embd_dim, batch_norm = True,
-                                   act_fn = F.elu, norm_first= True, drop_out_bool = False))
-decoder = torch.jit.script(Decoder(trunc_length, encoded_dim, 
-                                   embed_dim = embd_dim, batch_norm = True,
-                                   act_fn = F.elu, norm_first= True, drop_out_bool = False))
 
-autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
+encoded_dim = embd_dim*chnl_dim
+encoder_kernel_size = 5
+
+encoder = Encoder(trunc_length, encoded_dim, 
+                  kernel_size=encoder_kernel_size, 
+                  num_layers=3, embed_dim = embd_dim, 
+                  batch_norm=True, act_fn=F.elu, 
+                  norm_first=True, dropout_bool = True, 
+                  dropout_prob=0.2).to(device)
+
+decoder = Decoder(trunc_length, encoded_dim, 
+                  # kernel_size=encoder_kernel_size, 
+                  num_layers=3, embed_dim =embd_dim, 
+                  batch_norm=True, act_fn=F.elu, 
+                  norm_first=True, dropout_bool = True, 
+                  dropout_prob=0.2).to(device)
+
+# autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
+autoencoder = AutoEncoder(encoder, decoder)
 
     
 # building the data sets (no need for special collate function)
 dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
                                               batch_size=batch_size,
                                               shuffle=True, 
-                                              num_workers=2)#,
+                                              num_workers=num_workers)#,
                                               #pin_memory=False )
 
 dataloader_test_auto = torch.utils.data.DataLoader(dataset_test_auto, 
-                                             batch_size=batch_size,
-                                             num_workers=2,
+                                             batch_size=10*batch_size,
+                                             num_workers=num_workers,
                                              shuffle=True)
 
 
@@ -471,6 +258,7 @@ print("Starting Training Loop")
 
 num_stages = 5
 
+# creating the array with the differnt batch sizes and number of epochs
 batch_size_array = [batch_size*2**i for i in range(num_stages)] 
 base_epochs = int(nEpochs/np.sum([2**i for i in range(num_stages)]))
 n_epochs_array = [base_epochs*2**i for i in range(num_stages)] 
@@ -478,7 +266,8 @@ n_epochs_array = [base_epochs*2**i for i in range(num_stages)]
 
 print("Starting Training Loop")
 
-for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
+for batch_size_loc, n_epochs in zip(batch_size_array,
+                                    n_epochs_array):
 
     # building the data sets (no need for special collate function)
     dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
@@ -497,7 +286,8 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
         ###################
         for genes_one_hot, genes in dataloader_train_auto:
             #send to the device (either cpu or gpu)
-            genes_one_hot, genes = genes_one_hot.float().to(device), genes.to(device)
+            genes_one_hot, genes = genes_one_hot.float().to(device),\
+                                   genes.to(device)
             # reshape them 
             genes_one_hot = genes_one_hot.view(genes_one_hot.shape[0]*4, 20, -1)
             genes = genes.view(genes.shape[0]*4, -1)
@@ -565,7 +355,9 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
                                                                      str(batch_size)))
 
 
-    # here we compute= the accuracy of the converged network in the training data 
+    #at the end of each stage we compute the training accuracy to compare it 
+    # with the 
+
     autoencoder.eval()
     correct, total = 0, 0
 
@@ -586,8 +378,8 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
 
     accuracyTest = correct/total
 
-    print('Ttrain accuracy: {:.6f}'.format(accuracyTest))
-
+    print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
+                                                     accuracyTest))
 
 
 class _PermutationModule(torch.nn.Module):
@@ -656,20 +448,8 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
 datasetTest = SequenceDataSet(inputTest, outputTest) 
 
-# building the data sets (no need for special collate function)
-dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
-                                              batch_size=batch_size,
-                                              shuffle=True, 
-                                              num_workers=2)
-                                              # pin_memory=True )
-
-dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=batch_size,
-                                             num_workers=2,
-                                             shuffle=True)
 # we add an embedding layer so we don't need to do 
 # the one hot encoding
-
 
 class _AutoEncoderEmbedding(torch.nn.Module):
     # we use first an embedding for the 
@@ -688,32 +468,19 @@ class _AutoEncoderEmbedding(torch.nn.Module):
         # return as a 1D vector 
         return x.view(x.shape[0],self.chnl_dim, self.encoded_dim//self.chnl_dim )
 
-
-## TODO: there is an issue with the padding for torch.script
-# # we will use the pretrained encoder for the embedding
-# D = torch.jit.script(_AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim))
-
-# # non-linear merge is just a bunch of dense ResNets 
-# M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True))
-# M2 = torch.jit.script(_NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True))
-
-# # model using the permutations
-# model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
-
 # we will use the pretrained encoder for the embedding
 D = _AutoEncoderEmbedding(encoder, encoded_dim, chnl_dim)
 
 # non-linear merge is just a bunch of dense ResNets 
 M1 = _NonLinearMergeConv(chnl_dim, 3, 6, dropout_bool=True)
+
 M2 = _NonLinearScoreConv(chnl_dim, 3, 6, dropout_bool=True)
 
 # model using the permutations
 model = _PermutationModule(D, M1, M2).to(device)
 
-
-
 # specify loss function
-criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+criterion = torch.nn.CrossEntropyLoss(reduction='mean')
 
 # specify optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -747,6 +514,7 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
                                                   shuffle=True, 
                                                   num_workers=num_workers)
                                                   # pin_memory=True )
+
 
     maxAccuracy = 0
 
@@ -814,6 +582,25 @@ for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
                                                                     str(lr), 
                                                                      str(batch_size)))
 
+    model.eval()
+    correct, total = 0, 0
+
+    for genes, quartets_batch in dataloaderTrain:
+        #send to the device (either cpu or gpu)
+        genes, quartets_batch = genes.float().to(device), quartets_batch.to(device)
+        # forward pass: compute predicted outputs by passing inputs to the model
+        quartetsNN = model(genes)
+        # calculate the loss
+        _, predicted = torch.max(quartetsNN, 1)
+        
+        total += quartets_batch.size(0)
+        correct += (predicted == quartets_batch).sum().item()
+
+    accuracyTrain = correct/total
+
+    print('Epoch: {} \tTrain accuracy: {:.6f}'.format(epoch, 
+                                                     accuracyTrain))
+
 
     torch.save(model.state_dict(), modelRoot + "/" +
                "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
@@ -847,3 +634,5 @@ with open(summary_file, 'a') as f:
                                     str(chnl_dim),
                                     str(embd_dim)))
 ## testing and saving data to centralized file 
+
+
