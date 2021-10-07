@@ -80,6 +80,9 @@ print("=================================================")
 print("Loading Sequence Data in " + mat_file, flush = True)
 print("Loading Label Data in " + label_file, flush = True)
 
+# function to count parameters
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # we read the labels as list of strings
 with open(dataRoot+'/'+label_file, 'r') as f: 
