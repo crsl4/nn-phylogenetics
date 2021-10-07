@@ -248,21 +248,6 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
 datasetTest = SequenceDataSet(inputTest, outputTest) 
 
-# building the data sets (no need for special collate function)
-dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
-                                              batch_size=batch_size,
-                                              shuffle=True, 
-                                              num_workers=2)
-                                              # pin_memory=True )
-
-dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=batch_size,
-                                             num_workers=2,
-                                             shuffle=True)
-# we add an embedding layer so we don't need to do 
-# the one hot encoding
-
-
 class _EncoderEmbedding(torch.nn.Module):
     # we use first an embedding for the 
 
@@ -345,7 +330,12 @@ dataloaderTest = torch.utils.data.DataLoader(datasetTest,
 
 print("Starting Training Loop")
 
-for batch_size_loc, n_epochs in zip(batch_size_array, n_epochs_array):
+for batch_size_loc, n_epochs in zip(batch_size_array,\
+                                    n_epochs_array):
+
+    print("=================================================")
+    print("Batch size {} ".format(batch_size_loc))
+    print("Number of epochs for this stage {} \n".format(n_epochs))
 
     # building the data sets (no need for special collate function)
     dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 

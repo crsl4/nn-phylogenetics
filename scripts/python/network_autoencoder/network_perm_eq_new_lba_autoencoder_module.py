@@ -249,8 +249,7 @@ print("number of parameters for the autoencoder is %d"%\
 # defining the Test data loader    
 dataloader_test_auto = torch.utils.data.DataLoader(dataset_test_auto, 
                                              batch_size=10*batch_size,
-                                             num_workers=num_workers,
-                                             shuffle=True)
+                                             num_workers=num_workers)
 
 
 # specify loss function
@@ -289,7 +288,7 @@ for batch_size_loc, n_epochs in zip(batch_size_array,
                                     n_epochs_array):
     print("=================================================")
     print("Batch size {} ".format(batch_size_loc))
-    print("Number of eppoch for this stage {} \n".format(n_epochs))
+    print("Number of epochs for this stage {} \n".format(n_epochs))
 
     # building the data sets (no need for special collate function)
     dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
