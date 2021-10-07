@@ -1,0 +1,21 @@
+{
+    "with_distrib":     false,
+    "_comment":         " model parameters",
+    "ngpu":              1,
+    "lr":                0.001,
+    "batchSize":         4, 
+    "modelRoot":         "best_models",
+    "dataRoot":          "../../../data/new-lba",
+    "labelFile":         "labels18683228-0.1-10.0-1.0.in",
+    "matFile":           "sequences18683228-0.1-10.0-1.0.in",
+    "nTrainSamples":      9500,
+    "nTestSamples":       500,
+    "_comment":         "that's all",
+    "nEpochs":           512,
+    "gamma":             0.98,
+    "lrSteps":           5,
+    "channel_dimension": 16, 
+    "embedding_dimension": 4,
+    "encoded dimension":   100
+
+}

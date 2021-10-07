@@ -80,6 +80,10 @@ if "summaryFile" in dataJson:
 else :
     summary_file = "summary_file.txt"
 
+if "jit" in dataJson:
+    jit_bool = dataJson["jit"]
+else:
+    jit_bool = False
 
 # the default number of stages
 if "num_stages" in dataJson:
@@ -221,8 +225,17 @@ decoder = Decoder(trunc_length, encoded_dim,
                   norm_first=True, dropout_bool = True, 
                   dropout_prob=0.2).to(device) 
 
-# autoencoder = torch.jit.script(AutoEncoder(encoder, decoder))
-autoencoder = AutoEncoder(encoder, decoder)
+
+# if we need to jit it to make it faster
+if jit_bool:
+
+    encoder = torch.jit.script(encoder)
+    decoder = torch.jit.script(decoder)
+
+    autoencoder = torch.jit.script(AutoEncoder(encoder, decoder)).to(device) 
+
+else:
+    autoencoder = AutoEncoder(encoder, decoder).to(device) 
 
 
 print("number of parameters for the encoder is %d"%\
@@ -274,6 +287,9 @@ print("Starting Training Loop")
 
 for batch_size_loc, n_epochs in zip(batch_size_array,
                                     n_epochs_array):
+    print("=================================================")
+    print("Batch size {} ".format(batch_size_loc))
+    print("Number of eppoch for this stage {} \n".format(n_epochs))
 
     # building the data sets (no need for special collate function)
     dataloader_train_auto = torch.utils.data.DataLoader(dataset_train_auto, 
