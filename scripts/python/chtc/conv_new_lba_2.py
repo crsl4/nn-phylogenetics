@@ -169,11 +169,6 @@ print("Number of testing samples: {}".format(n_test_samples))
 
 assert n_train_samples + n_test_samples <=  n_samples
 
-print("freeing space")
-## freeing space 
-del seq_string
-del labels
-del mats
 
 # We define our custom Sequence DataSet, which provides the 
 # the one-hot encoding on the fly.
@@ -226,6 +221,12 @@ outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 
 datasetTest = SequenceDataSet(inputTest, outputTest) 
+
+print("freeing space")
+## freeing space 
+del seq_string
+del labels
+del mats
 
 
 class _PermutationModule(torch.nn.Module):
