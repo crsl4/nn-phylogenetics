@@ -202,6 +202,11 @@ inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 
 datasetTest = SequenceDataSet(inputTest, outputTest) 
 
+print("freeing space")
+## freeing space 
+del seq_string
+del labels
+del mats
 
 class _PermutationModule(torch.nn.Module):
 

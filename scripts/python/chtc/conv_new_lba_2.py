@@ -146,6 +146,8 @@ for ii, c in enumerate(strL):
 # looping over the labels and create array
 # here each element of the label_char has 
 # the form "1\n", so we only take the first one
+
+print("allocating the space for the data", flush=True)
 labels = np.fromiter(map(lambda x: int(x[0])-1, 
                          label_char), dtype=np.int)
 
@@ -166,6 +168,12 @@ print("Number of training samples: {}".format(n_train_samples))
 print("Number of testing samples: {}".format(n_test_samples))
 
 assert n_train_samples + n_test_samples <=  n_samples
+
+print("freeing space")
+## freeing space 
+del seq_string
+del labels
+del mats
 
 # We define our custom Sequence DataSet, which provides the 
 # the one-hot encoding on the fly.
