@@ -286,6 +286,7 @@ print("Starting Training Loop")
 
 for batch_size_loc, n_epochs in zip(batch_size_array,
                                     n_epochs_array):
+
     print("=================================================")
     print("Batch size {} ".format(batch_size_loc))
     print("Number of epochs for this stage {} \n".format(n_epochs))

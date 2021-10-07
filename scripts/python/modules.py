@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 # class modules
 # In this file we collect all the modules so we don't need to re-write them
 # at every file
@@ -14,13 +14,15 @@ class _ResidueModule(torch.nn.Module):
     the stride and the filter width are fixed to zero.
     In particular here we just have channel mixing '''
 
-    def __init__(self, channel_count):
+    def __init__(self, channel_count, kernel_size=1):
         super().__init__()
         self.layers = torch.nn.Sequential(
-            torch.nn.Conv1d(channel_count, channel_count, 1),
+            torch.nn.Conv1d(channel_count, channel_count, kernel_size,
+                            padding = 'same', padding_mode='circular'),
             torch.nn.BatchNorm1d(channel_count),
             torch.nn.ReLU(),
-            torch.nn.Conv1d(channel_count, channel_count, 1),
+            torch.nn.Conv1d(channel_count, channel_count, kernel_size,
+                            padding = 'same', padding_mode='circular'),
             torch.nn.BatchNorm1d(channel_count),
             torch.nn.ReLU(),
         )
@@ -72,22 +74,21 @@ class _ResidueModuleDense(torch.nn.Module):
 
 class _NonLinearEmbedding(torch.nn.Module):
 
-    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
+    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim, kernel_size=1):
         super().__init__()
         
-        self.num_levels = np.int(np.floor(np.log((input_dim*chnl_dim)/emb_dim)/np.log(2)))
+        self.num_levels = np.int(np.floor(np.log2((input_dim*chnl_dim)/emb_dim)))
 
         blocks = []
         blocks.append(torch.nn.Conv1d(input_channel, chnl_dim, 1))
         blocks.append(torch.nn.BatchNorm1d(chnl_dim)) 
         for ii in range(self.num_levels):
-            blocks.append(_ResidueModule(chnl_dim))
+            blocks.append(_ResidueModule(chnl_dim, kernel_size=kernel_size))
             blocks.append(torch.nn.AvgPool1d(2))
         
         self.seq = nn.Sequential(*blocks)
 
         dims = np.int(input_dim//2**self.num_levels)
-
 
         self.dense = _ResidueModuleDense(dims*chnl_dim,emb_dim)
         self.dense2 = _ResidueModuleDense(emb_dim,emb_dim)
@@ -101,6 +102,7 @@ class _NonLinearEmbedding(torch.nn.Module):
 
         # return as a 1D vector 
         return x.view(x.shape[0], -1)
+
 
 
 class _NonLinearEmbeddingFourier(torch.nn.Module):
@@ -148,7 +150,6 @@ class _NonLinearMerge(torch.nn.Module):
             blocks.append(_ResidueModuleDense(emb_dim,emb_dim))
         
         self.layers = nn.Sequential(*blocks)
-
 
     def forward(self, x):
         return self.layers(x)
@@ -257,7 +258,7 @@ class _NonLinearScore(torch.nn.Module):
 
 class _NonLinearEmbeddingConv(torch.nn.Module):
 
-    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim):
+    def __init__(self, input_dim, input_channel, chnl_dim, emb_dim, kernel_size=1):
         super().__init__()
         
         self.chnl_dim = chnl_dim
@@ -267,8 +268,10 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
         blocks.append(torch.nn.Conv1d(input_channel, chnl_dim, 1))
         blocks.append(torch.nn.BatchNorm1d(chnl_dim)) 
         for ii in range(self.num_levels):
-            blocks.append(_ResidueModule(chnl_dim))
-            blocks.append(_ResidueModule(chnl_dim))
+            blocks.append(_ResidueModule(chnl_dim,\
+                                         kernel_size=kernel_size))
+            blocks.append(_ResidueModule(chnl_dim,\
+                                         kernel_size=kernel_size))
             blocks.append(torch.nn.AvgPool1d(2))
         
         self.seq = nn.Sequential(*blocks)
@@ -288,12 +291,12 @@ class _NonLinearMergeConv(torch.nn.Module):
     """Class for merging two different branches"""
 
     def __init__(self, chnl_dim, kernel_size, depth,
-                 dropout_bool=False, dropout_prob=0.2):
+                 dropout_bool=False, dropout_prob=0.2, act_fn = F.relu):
         super().__init__()
         
         blocks_mid = []
         for ii in range(depth//2):
-            blocks_mid.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            blocks_mid.append(ResNetBlock(chnl_dim, kernel_size, act_fn=act_fn))
             if dropout_bool:
                 blocks_mid.append(nn.Dropout(dropout_prob))
         
@@ -359,7 +362,7 @@ class _NonLinearMergeConv(torch.nn.Module):
 class _NonLinearScoreConv(torch.nn.Module):
 
     def __init__(self, chnl_dim, kernel_size, depth,
-                 dropout_bool = False, dropout_prob = 0.2):
+                 dropout_bool = False, dropout_prob = 0.2, act_fn = F.relu):
         super().__init__()
          
 
@@ -368,7 +371,7 @@ class _NonLinearScoreConv(torch.nn.Module):
 
         blocks_merge = []
         for ii in range(depth//2):
-            blocks_merge.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            blocks_merge.append(ResNetBlock(chnl_dim, kernel_size, act_fn=act_fn))
             if dropout_bool:
                 blocks_merge.append(nn.Dropout(dropout_prob))
         
@@ -376,7 +379,7 @@ class _NonLinearScoreConv(torch.nn.Module):
 
         blocks_score = []
         for ii in range(depth//2):
-            blocks_score.append(ResNetBlock(chnl_dim, kernel_size, 1))
+            blocks_score.append(ResNetBlock(chnl_dim, kernel_size, act_fn=act_fn))
             if dropout_bool:
                 blocks_score.append(nn.Dropout(dropout_prob))
 
@@ -406,19 +409,21 @@ class _NonLinearScoreConv(torch.nn.Module):
 class ConvCircBlock(nn.Module):
     """class that computes a 1D convolution by a periodic padding"""
     def __init__(self, in_layer, out_layer, 
-                 kernel_size, stride, dilation, bias=False):
+                 kernel_size, stride, dilation, 
+                 bias=True, act_fn = F.relu):
         super(ConvCircBlock, self).__init__()
 
 
         self.padding = kernel_size//2
 
         # in this case we want to use circular padding
-        self.conv1 = nn.Conv1d(in_layer, out_layer, kernel_size=kernel_size, 
+        self.conv1 = nn.Conv1d(in_layer, out_layer, 
+                               kernel_size=kernel_size, 
                                stride=stride, dilation=dilation, 
                                padding=0, bias=bias)
         self.bn = nn.BatchNorm1d(out_layer)
-        self.relu = nn.ReLU()
-    
+        self.act_fn = act_fn
+
     def forward(self,x):
 
         # adding the padding
@@ -427,19 +432,26 @@ class ConvCircBlock(nn.Module):
                        x[:,:,:self.padding]], dim = 2)
         # todo: use the torch.nn.functional.pad function
 
+        # todo: add a flag to use batch normalization either
+        # after of before activation function
+        # convolutional layer
         x = self.conv1(x)
-        x = self.bn(x)
-        out = self.relu(x)
-        
+        # apply activation function
+        x = self.act_fn(x)
+        # apply batch normalization
+        out = self.bn(x)
+
         return out
 
 class ResNetBlock(nn.Module):
     '''ResNet block using the circular convolutional block above'''
-    def __init__(self, in_out_layer, kernel_size, dilation, bias=False):
+    def __init__(self, in_out_layer, kernel_size, dilation = 1, bias=True,
+                act_fn = F.relu):
         super(ResNetBlock, self).__init__()
         
         self.cbr1 = ConvCircBlock(in_out_layer,in_out_layer, kernel_size, 1, dilation, bias)
         self.cbr2 = ConvCircBlock(in_out_layer,in_out_layer, kernel_size, 1, dilation, bias)
+
         # self.seblock = ScalarBlock(out_layer, out_layer)
     
     def forward(self,x):
@@ -637,8 +649,12 @@ class Encoder(nn.Module):
         for conv_l, norm_l in zip(self.layers_conv,\
                               self.batch_norm_layers):
             x = self.act_fn(conv_l(x))
+            
+            # batch normalization
             if self.batch_norm:
                 x = norm_l(x)
+
+            # dropout if necessary
             if self.dropout_bool:
                 x = self.drop_out(x)
 
