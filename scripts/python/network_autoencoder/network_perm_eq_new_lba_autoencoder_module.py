@@ -185,9 +185,10 @@ inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :trunc_length])
 outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :,:trunc_length])
 
-# # creating the dataset objects
-# datasetTrain = data.TensorDataset(inputTrain, outputTrain) 
-# datasetTest = data.TensorDataset(inputTest, outputTest) 
+## freeing space 
+del seq_string
+del labels
+del mats
 
 # we use this dataset that perform the one_hot encoding on the fly 
 dataset_train_auto = SequenceEncoderDataSet(inputTrain) 
