@@ -273,9 +273,12 @@ class _NonLinearEmbeddingConv(torch.nn.Module):
         
         self.seq = nn.Sequential(*blocks)
 
+        self.out_dim = input_dim//(2**self.num_levels)
+        self.dense = nn.Linear(self.out_dim*chnl_dim, emb_dim*chnl_dim)
 
     def forward(self, x):
         x = self.seq(x)
+        x = self.dense(x.view(x.shape[0], self.out_dim*self.chnl_dim))
 
         # return as a 1D vector 
         return x.view(x.shape[0], self.chnl_dim, -1)
@@ -397,8 +400,6 @@ class _NonLinearScoreConv(torch.nn.Module):
 
         return self.score(z)
 # a couple of ideas for the merge module. 
-
-
 
 
 ## here are the ResNet modules used for the Unet
@@ -575,8 +576,10 @@ class ScalarBlock(nn.Module):
 #  Autoencoder layers
 ################################################################
 
+## TODO: these need to be properly tested! 
+
 class Encoder(nn.Module):
-    def __init__(self, input_shape, encoded_dim, num_layers = 3, embed_dim = 4, batch_norm = True, 
+    def __init__(self, input_shape, encoded_dim, kernel_size = 3, num_layers = 3, embed_dim = 4, batch_norm = True, 
                  act_fn=torch.tanh, norm_first= True, dropout_bool = False, dropout_prob = 0.2):
         super(Encoder, self).__init__()
         ## encoder layers ##
@@ -594,19 +597,25 @@ class Encoder(nn.Module):
         self.norm_first = norm_first
         self.dropout_bool = dropout_bool
 
-        self.layers_conv = []
-        self.batch_norm = []
+        layers_conv = []
+        batch_norm_layers = []
+
+        self.pool = nn.MaxPool1d(2, 2)
 
         # adding the embedding layer 
         self.emb = nn.Conv1d(20, embed_dim, 1, padding=0) 
         self.batch_norm_emb = nn.BatchNorm1d(embed_dim)
 
         for ii in range(num_layers):
-            self.layers_conv.append(nn.Conv1d(embed_dim*(2**ii), 
-                                              embed_dim*(2**(ii+1)), 
-                                              3, padding=1))
-            self.batch_norm.append(nn.BatchNorm1d(embed_dim*(2**(ii+1))))
+            layers_conv.append(nn.Conv1d(embed_dim*(2**ii), 
+                                         embed_dim*(2**(ii+1)), 
+                                         kernel_size, 
+                                         padding=kernel_size//2))
+            batch_norm_layers.append(nn.BatchNorm1d(embed_dim*(2**(ii+1))))
 
+
+        self.layers_conv = nn.ModuleList(layers_conv)
+        self.batch_norm_layers = nn.ModuleList(batch_norm_layers)
 
         # to use later
         self.drop_out = torch.nn.Dropout(dropout_prob)
@@ -620,14 +629,16 @@ class Encoder(nn.Module):
         
         # we perform a simple embedding a this point
         x = self.act_fn(self.emb(x))
+        
         if self.batch_norm:
             x = self.batch_norm_emb(x)
 
 
-        for ii in range(self.num_layers):
-            x = self.act_fn(self.layers_conv[ii](x))
+        for conv_l, norm_l in zip(self.layers_conv,\
+                              self.batch_norm_layers):
+            x = self.act_fn(conv_l(x))
             if self.batch_norm:
-                x = self.batch_norm[ii](x)
+                x = norm_l(x)
             if self.dropout_bool:
                 x = self.drop_out(x)
 
@@ -640,64 +651,77 @@ class Encoder(nn.Module):
         return x
 
 class Decoder(nn.Module):
-    def __init__(self, input_shape, encoded_dim, embed_dim = 4, batch_norm = True, 
-                 act_fn = torch.tanh, norm_first= True, dropout_bool = False, dropout_prob = 0.2):
+    def __init__(self, input_shape, encoded_dim, num_layers=3, 
+                embed_dim = 4, batch_norm = True, 
+                 act_fn = torch.tanh, norm_first= True, 
+                 dropout_bool = False, dropout_prob = 0.2):
         super(Decoder, self).__init__()
 
         # TODO: add flag for using the batch normalization 
         # either after or before
         ## decoder layers ##
+        
+        assert input_shape%(2**num_layers) == 0
+
+        self.num_layers = num_layers
         self.batch_norm = batch_norm
         self.act_fn = act_fn
         self.embed_dim = embed_dim
-        self.drop_out_bool = drop_out_bool
         
+        # todo: apply the normalization either 
+        # before of after the activation 
+        self.norm_first = norm_first
+        self.dropout_bool = dropout_bool
 
-        self.dense = nn.Linear(encoded_dim, input_shape*embed_dim)
+        ## dense layers
+        self.dense = nn.Linear(encoded_dim, (input_shape*embed_dim))
+        self.batch_norm_dense = nn.BatchNorm1d(input_shape*embed_dim)
 
-        ## a kernel of 2 and a stride of 2 will increase the spatial dims by 2
-        self.t_conv1 = nn.ConvTranspose1d(4*embed_dim, 2*embed_dim, 2, stride=2)
-        self.t_conv2 = nn.ConvTranspose1d(2*embed_dim, embed_dim, 2, stride=2)
+        layers_deconv = []
+        batch_norm_layers = []
+
+        for ii in range(num_layers):
+            layers_deconv.append(
+                nn.ConvTranspose1d(embed_dim*(2**(num_layers-ii)), 
+                                   embed_dim*(2**(num_layers-ii-1)), 
+                                   2, stride=2))
+            batch_norm_layers.append(
+                nn.BatchNorm1d(embed_dim*(2**(num_layers-ii-1))))
+
+
+        self.layers_deconv = nn.ModuleList(layers_deconv)
+        self.batch_norm_layers = nn.ModuleList(batch_norm_layers)
+
+        # to use later
+        self.drop_out = torch.nn.Dropout(dropout_prob)
+
+        self.emb = nn.Conv1d(embed_dim, 20, 1, padding=0) 
         
-        self.conv3 = nn.Conv1d(embed_dim, 20, 1, padding=0)  
-        
-        self.batch_norm1 = nn.BatchNorm1d(4*embed_dim)
-        self.batch_norm2 = nn.BatchNorm1d(2*embed_dim)
-        self.batch_norm3 = nn.BatchNorm1d(embed_dim)
-
-        self.drop_out = torch.nn.Dropout(0.2)
-
 
     def forward(self, x):
         ## decode ##
+        # size of x  (batch_size, self.encoded_dim)
 
         x = self.act_fn(self.dense(x))
-        x = x.view(x.shape[0], 4*self.embed_dim, -1)
-        
+        # (batch_size, self.input * self.embd_dim)
+
         if self.batch_norm:
-            x = self.batch_norm1(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
+            x = self.batch_norm_dense(x)
+        # (batch_size, self.input * self.embd_dim)
 
+        x = x.view(x.shape[0], (2**self.num_layers)*self.embed_dim, -1)
+        # (batch_size, (2**num_layers)*embed_dim, self.input/((2**num_layers)*embed_dim))
 
-        x = self.act_fn(self.t_conv1(x))
-        
-        if self.batch_norm:
-            x = self.batch_norm2(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
+        for deconv_l, norm_l in zip(self.layers_deconv,\
+                                    self.batch_norm_layers):
 
-        x = self.act_fn(self.t_conv2(x))
-        
-        if self.batch_norm:
-            x = self.batch_norm3(x)
-        
-        if self.drop_out_bool:
-            x = self.drop_out(x)
+            x = self.act_fn(deconv_l(x))
+            if self.batch_norm:
+                x = norm_l(x)
+            if self.dropout_bool:
+                x = self.drop_out(x)
 
-        x = self.conv3(x)
+        x = self.emb(x)
 
         # output layer (with sigmoid for scaling from 0 to 1)
         return torch.sigmoid(x)
