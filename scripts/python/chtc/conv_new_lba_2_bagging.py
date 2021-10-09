@@ -132,7 +132,7 @@ def convert_string_to_numbers(str, dict):
     # create a map iterator using a lambda function
     numbers = map(lambda x: dict[x], str)
 
-    return np.fromiter(numbers, dtype=np.int)
+    return np.fromiter(numbers, dtype=np.int64)
 
 # We need to extract the dictionary with the relative positions
 # fo each aminoacid
@@ -155,7 +155,7 @@ for ii, c in enumerate(strL):
 # here each element of the label_char has 
 # the form "1\n", so we only take the first one
 labels = np.fromiter(map(lambda x: int(x[0])-1, 
-                         label_char), dtype=np.int32)
+                         label_char), dtype=np.int64)
 
 mats = np.zeros((len(seq_string), seq_lenght), dtype = np.int64)
 
