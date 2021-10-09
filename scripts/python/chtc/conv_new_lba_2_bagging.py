@@ -10,16 +10,18 @@ import h5py
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 from torch.utils import data
 import itertools
 import json
 import sys
 from os import path
-import time
-
+import time 
 
 sys.path.insert(0, '../')
 
+
+from utilities import SequenceDataSet
 from modules import _ResidueModule
 from modules import _ResidueModuleDense
 
@@ -62,18 +64,19 @@ chnl_dim = dataJson["channel_dimension"]
 embd_dim = dataJson["embedding_dimension"]
 
 
+# how many models we are going to use
+if "num_models" in dataJson:
+    num_models =dataJson["num_models"]
+else:
+    num_models = 1
+
+# imposing a given random seed for reproducibility
 if "random_seed" in dataJson:
     torch.manual_seed(dataJson["random_seed"])
 else:
     torch.manual_seed(0)
 
-
-if "summaryFile" in dataJson:
-    summary_file = dataJson["summaryFile"]   # file in which we 
-                                             # summarize the end result
-else :
-    summary_file = "summary_file.txt"
-
+# kernel size for the convolutions
 if "kernel_size" in dataJson:
     kernel_size = dataJson["kernel_size"]   # file in which we 
                                              # summarize the end result
@@ -86,6 +89,12 @@ if "kernel_size_emb" in dataJson:
 else :
     kernel_size_emb = 3
 
+if "summaryFile" in dataJson:
+    summary_file = dataJson["summaryFile"]   # file in which we 
+                                             # summarize the end result
+else :
+    summary_file = "summary_file.txt"
+
 print("=================================================\n")
 
 print("Learning Rate {} ".format(lr))
@@ -95,7 +104,6 @@ print("=================================================")
 
 print("Loading Sequence Data in " + mat_file, flush = True)
 print("Loading Label Data in " + label_file, flush = True)
-
 
 # function to count parameters
 def count_parameters(model):
@@ -146,10 +154,8 @@ for ii, c in enumerate(strL):
 # looping over the labels and create array
 # here each element of the label_char has 
 # the form "1\n", so we only take the first one
-
-print("allocating the space for the data", flush=True)
 labels = np.fromiter(map(lambda x: int(x[0])-1, 
-                         label_char), dtype=np.int64)
+                         label_char), dtype=np.int32)
 
 mats = np.zeros((len(seq_string), seq_lenght), dtype = np.int64)
 
@@ -169,65 +175,56 @@ print("Number of testing samples: {}".format(n_test_samples))
 
 assert n_train_samples + n_test_samples <=  n_samples
 
+# we perform the training/validation splitting with the different 
+# overlapping arrays we could always de resampling 
 
-# We define our custom Sequence DataSet, which provides the 
-# the one-hot encoding on the fly.
-class SequenceDataSet(torch.utils.data.Dataset):
-    """Face Landmarks dataset."""
+data_shuffle = True
 
-    def __init__(self, sequences, labels, n_char = 20, transform=None):
-        """
-        Args:  sequences: pytorch tensor with the sequences
-               labels:    pytorch tensor with the labels
-        """
-        self.sequences = sequences
-        self.labels = labels
-        # number of characters
-        self.n_char = n_char
+if data_shuffle:
+    # we are going to shuffle the data 
+    idx_shuffle = np.arange(n_samples)
+    np.random.shuffle(idx_shuffle)
 
-    def __len__(self):
-        return self.labels.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        sequence_out = self.sequences[idx,:,:]
-        label = self.labels[idx]
-        seq_stack = []
-
-        for ii in range(4):
-            temp = torch.nn.functional.one_hot(sequence_out[ii,:], 
-                                                      self.n_char)
-            # we need to transpose it. Perhaps is better to 
-            # transpose everything at the end.
-            temp = torch.transpose(temp, 0, 1)
-            seq_stack.append(temp)
-
-        seq_stack = torch.stack(seq_stack, dim=0)
-
-        sample = (seq_stack, label)
-
-        return sample
+    labels = labels[idx_shuffle]
+    mats   = mats[idx_shuffle,:,:]
 
 
-# we perform the training/validation splitting
-outputTrain = torch.from_numpy(labels[0:n_train_samples])
-inputTrain  = torch.from_numpy(mats[0:n_train_samples, :, :])
+dataloaderTrain_array = []
 
-datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
+for i in range(num_models):
+
+    outputTrain = torch.from_numpy(labels[n_train_samples*i:n_train_samples*(i+1)])
+    inputTrain  = torch.from_numpy(mats[n_train_samples*i:n_train_samples*(i+1), :, :])
+
+    datasetTrain = SequenceDataSet(inputTrain, outputTrain) 
+
+    # building the data sets (no need for special collate function)
+    dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
+                                                  batch_size=batch_size,
+                                                  shuffle=True, 
+                                                  num_workers=2)
+
+    dataloaderTrain_array.append(dataloaderTrain)
+
+
+
 
 outputTest = torch.from_numpy(labels[-n_test_samples:-1])
 inputTest  = torch.from_numpy(mats[-n_test_samples:-1, :, :])
 
 datasetTest = SequenceDataSet(inputTest, outputTest) 
 
+dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
+                                             batch_size=batch_size,
+                                             num_workers=2)
+
+
+
 print("freeing space")
 ## freeing space 
 del seq_string
 del labels
 del mats
-
 
 class _PermutationModule(torch.nn.Module):
 
@@ -285,57 +282,47 @@ class _PermutationModule(torch.nn.Module):
         return G
 
 
-# building the data sets (no need for special collate function)
-dataloaderTrain = torch.utils.data.DataLoader(datasetTrain, 
-                                              batch_size=batch_size,
-                                              shuffle=True, 
-                                              num_workers=2)
-
-dataloaderTest = torch.utils.data.DataLoader(datasetTest, 
-                                             batch_size=batch_size,
-                                             num_workers=2)
-
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 # defining the models
 # this is harwired for now
-jit = False
-if jit: 
-    D  = torch.jit.script(_NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
-                             kernel_size=kernel_size_emb, dropout_bool=True)).to(device)
-    # non-linear merge is just a bunch of dense ResNets 
-    M1 = torch.jit.script(_NonLinearMergeConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn=F.relu)).to(device)
 
-    M2 =torch.jit.script(_NonLinearScoreConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn = F.relu)).to(device)
+model_bagged = []
+optimizer_bagged = []
+exp_lr_sched_bagged = []
 
-    # model using the permutations
-    model = torch.jit.script(_PermutationModule(D, M1, M2)).to(device)
+print("building the array of models")
+for i in range(num_models):
 
-else:
     D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
-                                 kernel_size=kernel_size_emb, dropout_bool=True)
+                             kernel_size=kernel_size_emb, dropout_bool=True).to(device)
     # non-linear merge is just a bunch of dense ResNets 
     M1 = _NonLinearMergeConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn=F.relu)
+                             dropout_bool=True, act_fn=F.elu).to(device)
+
     M2 = _NonLinearScoreConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn = F.relu)
+                             dropout_bool=True, act_fn = F.elu).to(device)
+
     # model using the permutations
     model = _PermutationModule(D, M1, M2).to(device)
 
+    # counting the total number of parameters
+    print("number of parameters for the model is %d"%count_parameters(model))
 
-print("number of parameters for the model is %d"%count_parameters(model))
+    # specify optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    # specidy scheduler
+    exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                 step_size=lr_steps, gamma=gamma)
+
+    #
+    model_bagged.append(model)
+    optimizer_bagged.append(optimizer)
+    exp_lr_sched_bagged.append(exp_lr_scheduler)
 
 # specify loss function
 criterion = torch.nn.CrossEntropyLoss(reduction='mean')
-
-# specify optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
-# specidy scheduler
-exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                             step_size=lr_steps, gamma=gamma)
 
 # model.load_state_dict(torch.load("best_models/saved_permutation_model_shallow_augmented_best_batch_16.pth"))
 # model.eval()
@@ -346,66 +333,98 @@ maxAccuracy = 0
 
 for epoch in range(1, nEpochs+1):
     # monitor training loss
-    train_loss = 0.0
-    # monitor time 
-    start = time.time()
-    model.train()
+    
     ###################
     # train the model #
     ###################
+    print('Epoch: {} '.format(epoch), flush=True)
+    print("=================================================")
 
-    for genes, quartets_batch in dataloaderTrain:
-        #send to the device (either cpu or gpu)
-        genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
-        # clear the gradients of all optimized variables
-        optimizer.zero_grad()
-        # forward pass: compute predicted outputs by passing inputs to the model
-        quartetsNN = model(genes)
-        # calculate the loss
-        loss = criterion(quartetsNN, quartets_batch)
-        # backward pass: compute gradient of the loss with respect to model parameters
-        loss.backward()
-        # perform a single optimization step (parameter update)
-        optimizer.step()
-        # update running training loss
-        train_loss += loss.item()
+    for idx_model, (model,\
+                    dataloaderTrain,\
+                    optimizer,\
+                    exp_lr_scheduler) in enumerate(zip(model_bagged,\
+                                                         dataloaderTrain_array,\
+                                                         optimizer_bagged,\
+                                                         exp_lr_sched_bagged)):
+        train_loss = 0.0
+        # monitor time 
+        start = time.time()
+        model.train()
 
-    # print avg training statistics 
+        for genes, quartets_batch in dataloaderTrain:
+            #send to the device (either cpu or gpu)
+            genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
+            # clear the gradients of all optimized variables
+            optimizer.zero_grad()
+            # forward pass: compute predicted outputs by passing inputs to the model
+            quartetsNN = model(genes)
+            # calculate the loss
+            loss = criterion(quartetsNN, quartets_batch)
+            # backward pass: compute gradient of the loss with respect to model parameters
+            loss.backward()
+            # perform a single optimization step (parameter update)
+            optimizer.step()
+            # update running training loss
+            train_loss += loss.item()
 
-    end = time.time()
+        # print avg training statistics 
 
-    train_loss = train_loss/len(dataloaderTrain)
-    print('Epoch: {} \tLearning rate: {:.6f} \tTraining Loss: {:.6f} \tTime Elapsed: {:.6f}[s]'.format(
-        epoch, 
-        optimizer.param_groups[0]['lr'],
-        train_loss,
-        end - start
-        ), flush=True)
+        end = time.time()
 
-    # advance the step in the scheduler
-    exp_lr_scheduler.step() 
+        train_loss = train_loss/len(dataloaderTrain)
+        print('Model: {} \tLearning rate: {:.6f} \tTraining Loss: {:.6f} \tTime Elapsed: {:.6f}[s]'.format(
+            idx_model, 
+            optimizer.param_groups[0]['lr'],
+            train_loss,
+            end - start
+            ), flush=True)
+
+
+        # advance the step in the scheduler
+        exp_lr_scheduler.step() 
 
     # we compute the test accuracy every 10 epochs 
     if epoch % 10 == 0 :
 
-        model.eval()
+        
         correct, total = 0, 0
+        correct_model = torch.zeros(num_models, dtype=torch.int32).to(device)
 
+        # we want to have rather large batch size here, given that we will iterate over 
+        # different models
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
             genes, quartets_batch = genes.to(device).float(), quartets_batch.to(device)
             # forward pass: compute predicted outputs by passing inputs to the model
-            quartetsNN = model(genes)
-            # calculate the loss
-            _, predicted = torch.max(quartetsNN, 1)
             
+            predicted_array = torch.zeros([genes.shape[0], num_models], dtype=torch.int32).to(device)
+            
+            for i, model in enumerate(model_bagged):
+                model.eval()
+                quartetsNN = model(genes)
+                # calculate the loss
+                _, predicted = torch.max(quartetsNN, 1)
+
+                # compute the correctly predicted for this model
+                correct_m = (predicted == quartets_batch).sum().item()
+                correct_model[i] += correct_m
+
+                # save the predictions to then compute the mode
+                predicted_array[:,i] = predicted
+
+            predicted, _ = torch.mode(predicted_array)
+
             total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
         accuracyTest = correct/total
 
-        print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
+        print('Epoch: {} \tTest accuracy combined: {:.6f}'.format(epoch, 
                                                          accuracyTest))
+        for i, correct_m in enumerate(correct_model):
+            print('\t Model {} \tTest accuracy: {:.6f}'.format(epoch, 
+                                                         correct_m/total))
 
         if accuracyTest > maxAccuracy:
             maxAccuracy = accuracyTest
@@ -416,11 +435,11 @@ for epoch in range(1, nEpochs+1):
                                                                  str(batch_size)))
 
 
-torch.save(model.state_dict(), modelRoot  +
-           "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
-                                                            nameJson.split(".")[0],
-                                                            str(lr), 
-                                                            str(batch_size)))
+# torch.save(model.state_dict(), modelRoot  +
+#            "saved_{}_{}_lr_{}_batch_{}_lba_last.pth".format(nameScript.split(".")[0],
+#                                                             nameJson.split(".")[0],
+#                                                             str(lr), 
+#                                                             str(batch_size)))
 
 if not path.exists(summary_file):
     with open(summary_file, 'w') as f:
