@@ -295,13 +295,13 @@ print("building the array of models")
 for i in range(num_models):
 
     D  = _NonLinearEmbeddingConv(1550, 20, chnl_dim, embd_dim, 
-                             kernel_size=kernel_size_emb, dropout_bool=True).to(device)
+                             kernel_size=kernel_size_emb, dropout_bool=False).to(device)
     # non-linear merge is just a bunch of dense ResNets 
     M1 = _NonLinearMergeConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn=F.elu).to(device)
+                             dropout_bool=False, act_fn=F.elu).to(device)
 
     M2 = _NonLinearScoreConv(chnl_dim, kernel_size, 6, 
-                             dropout_bool=True, act_fn = F.elu).to(device)
+                             dropout_bool=False, act_fn = F.elu).to(device)
 
     # model using the permutations
     model = _PermutationModule(D, M1, M2).to(device)

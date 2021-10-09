@@ -124,7 +124,7 @@ def convert_string_to_numbers(str, dict):
     # create a map iterator using a lambda function
     numbers = map(lambda x: dict[x], str)
 
-    return np.fromiter(numbers, dtype=np.int)
+    return np.fromiter(numbers, dtype=np.int64)
 
 # We need to extract the dictionary with the relative positions
 # fo each aminoacid
