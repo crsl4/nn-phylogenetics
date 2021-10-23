@@ -1,3 +1,9 @@
+# in this script to fellow fairly closely Zou et al
+# but the create a equivariant descriptor for each type 
+# of tree topology from the beggining
+# We use a an embedding "across sequences" instead to
+# within sequences.  
+
 import numpy as np
 # import matplotlib.pyplot as plt
 import torch
