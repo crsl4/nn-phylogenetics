@@ -2,7 +2,8 @@
 # but the create a equivariant descriptor for each type 
 # of tree topology from the beggining
 # We use a an embedding "across sequences" instead to
-# within sequences.  
+# within sequences. 
+# this is an optimized version of the lstm network 
 
 import numpy as np
 # import matplotlib.pyplot as plt
@@ -256,6 +257,7 @@ class _Model(torch.nn.Module):
         # flatenning the parameters
         self.rnn.flatten_parameters()
 
+
     def forward(self, x):
         """Predict phylogenetic trees for the given sequences.
         Parameters
@@ -269,8 +271,7 @@ class _Model(torch.nn.Module):
         """
         device = x.device
         batch_size = x.size()[0]
-
-
+        
         # counte the number of equal proteins in a site 
 
         # this is the structure preserving embedding
@@ -281,53 +282,40 @@ class _Model(torch.nn.Module):
         x3 = g[:,2,:,:]
         # (none,embeding_dim, 1550)
 
-        r_output, hidden = self.rnn(x1.permute([0, 2, 1]).contiguous())
-        # (none, 1550, hidden_dim)
+        # contanenation in the batch dimesion
+        # (3*none, 80, 1550)
+        X = torch.cat([x1, x2, x3], dim  = 0)
 
-        # todo: change by a resnet
-        out = r_output.contiguous().view(-1, self.hidden_dim)
-        output = self.fc(out)
+        # (3*none, 1550, hidden_dim)
+        r_output, hidden = self.rnn(X.permute([0, 2, 1]))
+
+        # TODO: perhaps add an attention layer here!
+        # extracting only the last in the sequence
+        # (3*none, hidden_dim)
+        r_output_last = r_output[:, -1, :] 
+
+        # not sure if this helps
+        out = r_output_last.contiguous().view(-1, self.hidden_dim)
         
-        output = output.view(batch_size, -1, self.output_size)
-
-        # we take the last descriptor of the sequence
-        x1 = output[:, -1, :]   
-
-
-        r_output, hidden = self.rnn(x2.permute([0, 2, 1]).contiguous())
-    
-        # todo: change by a resnet
-        out = r_output.contiguous().view(-1, self.hidden_dim)
-
+        # (3*none, out_put_dimensions)
         output = self.fc(out)
-        
-        output = output.view(batch_size, -1, self.output_size)
 
-        x2 = output[:, -1]
+ 
+        X_combined = self.classifier(output) 
+        # (3*none, 1)
 
-        r_output, hidden = self.rnn(x3.permute([0, 2, 1]).contiguous())
-    
-        # todo: change by a resnet
-        out = r_output.contiguous().view(-1, self.hidden_dim)
-        output = self.fc(out)
-        
-        output = output.view(batch_size, -1, self.output_size)
-
-        x3 = output[:, -1]
-
-        x1 = self.classifier(x1) 
-        x2 = self.classifier(x2) 
-        x3 = self.classifier(x3)   
+        X_combined = X_combined.view(3,batch_size)
 
 
-        return torch.cat([x1,x2,x3], dim = 1)
+        return torch.permute(X_combined, [1, 0])
 
 
 ###############################################
 
 dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
                                               batch_size=batch_size,
-                                              shuffle=True)
+                                              shuffle=True,
+                                              pin_memory=True)
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest,
                                              batch_size=batch_size,
@@ -343,8 +331,13 @@ criterion = torch.nn.CrossEntropyLoss(reduction='mean')
 dropout = 0.2
 
 # define the model
-# model = _Model(dropout = dropout).to(device)
-model = torch.jit.script(_Model(dropout = dropout)).to(device)
+model = _Model(dropout = 0.2).to(device)
+# model = torch.jit.script(_Model(dropout = dropout)).to(device)
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+print("number of parameters is %d"%count_parameters(model))
 
 # specify loss function
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
