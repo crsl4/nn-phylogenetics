@@ -392,6 +392,8 @@ for epoch in range(1, nEpochs + 1):
         model.eval()
         correct, total = 0, 0
 
+        start = time.time()
+
         for genes, quartets_batch in dataloaderTest:
             #send to the device (either cpu or gpu)
             genes, quartets_batch = genes.to(device), quartets_batch.to(device)
@@ -403,10 +405,13 @@ for epoch in range(1, nEpochs + 1):
             total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
+        end = time.time()
+
         accuracyTest = correct/total
 
-        print('Epoch: {} \tTest accuracy: {:.6f}'.format(epoch, 
-                                                         accuracyTest))
+        print('Epoch: {} \tTest accuracy: {:.6f}  \tTime Elapsed: {:.6f}[s]'.format(epoch, 
+                                                         accuracyTest,
+                                                         end - start))
 
         if accuracyTest > maxAccuracy:
             maxAccuracy = accuracyTest
