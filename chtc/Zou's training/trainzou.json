@@ -1,0 +1,17 @@
+{
+    "with_distrib":     false,
+    "_comment":         " model parameters",
+    "ngpu":              1,
+    "lr":                0.001,
+    "batchSize":         16,
+    "modelRoot":         "result",
+    "dataRoot":          "",
+    "labelFile":         "labelsdata.in",
+    "matFile":           "sequencedata.in",
+    "_comment":         "that's all",
+    "nEpochs":           1300,
+    "gamma":             0.98,
+    "lrSteps":           10,
+    "summaryFile":      "zoutraining.out"
+}
+
