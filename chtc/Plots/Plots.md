@@ -2,7 +2,8 @@
 This ReadMe file is for description for producing the plots
 
 # Files
-Data files are in the [google doc](https://drive.google.com/drive/folders/1G_ied9kMbcJTt_ZNWWN67SAkggFISNGT) directory, including SixMethodsComparison.csv and EpochAccuracy1300.csv
+Data files are in the [google doc](https://drive.google.com/drive/folders/1G_ied9kMbcJTt_ZNWWN67SAkggFISNGT) directory, including SixMethodsComparison.csv and EpochAccuracy1300.csv.
+
 Python script to produce the plots is in the same github directory
 
 # Instructions
