@@ -6,6 +6,9 @@
 # this is an optimized version of the lstm network 
 
 import numpy as np
+# added random seed for reproducibility
+np.random.seed(1234567)
+
 # import matplotlib.pyplot as plt
 import torch
 torch.manual_seed(0)
@@ -54,6 +57,10 @@ n_test_samples = dataJson["nTestSamples"]
 
 nEpochs  = dataJson["nEpochs"]           # number of epochs
 
+hidden_dim = dataJson["hidden_dimension"]
+embd_dim = dataJson["embedding_dimension"]
+n_layers_lstm = dataJson["n_layers_lstm"]
+
 if "summaryFile" in dataJson:
     summary_file = dataJson["summaryFile"]   # file in which we 
                                              # summarize the end result
@@ -64,6 +71,9 @@ print("=================================================\n")
 
 print("Learning Rate {} ".format(lr))
 print("Batch Size {} \n".format(batch_size))
+print("Embedding Dimension {} ".format(embd_dim))
+print("Hidden Dimension {} \n".format(hidden_dim))
+print("Number of Layers LSTM {} \n".format(n_layers_lstm))
 
 print("=================================================")
 
@@ -186,12 +196,12 @@ class _ResidueModule(torch.nn.Module):
 class _DoubleEmbedding(torch.nn.Module):
     # we use first an embedding for the 
 
-    def __init__(self, length_dict, embeding_dim, trunc_length = 1550):
+    def __init__(self, length_dict, embedding_dim, trunc_length = 1550):
         super().__init__()
         
-        self.embedding_layer = nn.Embedding(length_dict, embeding_dim)
-        self._res_module_1 = _ResidueModule(embeding_dim)
-        self._res_module_2 = _ResidueModule(embeding_dim)
+        self.embedding_layer = nn.Embedding(length_dict, embedding_dim)
+        self._res_module_1 = _ResidueModule(embedding_dim)
+        self._res_module_2 = _ResidueModule(embedding_dim)
 
     def forward(self, x):
         # (none, 4, 1550)
@@ -246,18 +256,19 @@ class _DoubleEmbedding(torch.nn.Module):
 class _Model(torch.nn.Module):
     """A neural network model to predict phylogenetic trees."""
 
-    def __init__(self, embeding_dim = 80, hidden_dim = 20, 
+    def __init__(self, embedding_dim = 80, hidden_dim = 20, 
                       num_layers = 3, output_size = 20, 
                       dropout = 0.0):
         """Create a neural network model."""
         super().__init__()
 
-        self.embedding_layer = _DoubleEmbedding(20, embeding_dim)
+        self.embedding_layer = _DoubleEmbedding(20, embedding_dim)
         self.hidden_dim = hidden_dim
         self.output_size = output_size
 
         self.classifier = torch.nn.Linear(self.output_size, 1)
-        self.rnn = nn.LSTM(embeding_dim, hidden_dim, 
+
+        self.rnn = nn.LSTM(embedding_dim, hidden_dim, 
                            num_layers, dropout=dropout,
                            batch_first=True)
         self.fc = torch.nn.Linear(hidden_dim, self.output_size)
@@ -288,7 +299,7 @@ class _Model(torch.nn.Module):
         x1 = g[:,0,:,:]
         x2 = g[:,1,:,:]
         x3 = g[:,2,:,:]
-        # (none,embeding_dim, 1550)
+        # (none,embedding_dim, 1550)
 
         # contanenation in the batch dimesion
         # (3*none, 80, 1550)
@@ -339,7 +350,8 @@ criterion = torch.nn.CrossEntropyLoss(reduction='mean')
 dropout = 0.2
 
 # define the model
-model = _Model(dropout = 0.2).to(device)
+model = _Model(embedding_dim=embd_dim, hidden_dim=hidden_dim, 
+               num_layers=n_layers_lstm, output_size=hidden_dim, dropout = 0.2).to(device)
 # model = torch.jit.script(_Model(dropout = dropout)).to(device)
 
 def count_parameters(model):
@@ -441,6 +453,7 @@ for epoch in range(1, nEpochs + 1):
             total += quartets_batch.size(0)
             correct += (predicted == quartets_batch).sum().item()
 
+        mean_test_loss = test_loss/len(dataloaderTest)
         testEpoch.append(epoch)
         testLoss.append(test_loss)
         end = time.time()
@@ -448,7 +461,7 @@ for epoch in range(1, nEpochs + 1):
         getEpoch.append(epoch)
         getAcc.append(accuracyTest)
         print('Epoch: {} \tTest Loss: {:.6f} \tTest accuracy: {:.6f}  \tTime Elapsed: {:.6f}[s]'.format(epoch, 
-                                                        test_loss,
+                                                        mean_test_loss,
                                                         accuracyTest,
                                                         end - start))
 

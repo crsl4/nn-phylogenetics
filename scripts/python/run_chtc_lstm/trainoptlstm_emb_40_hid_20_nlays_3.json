@@ -1,0 +1,21 @@
+{
+    "with_distrib":     false,
+    "_comment":         "model parameters",
+    "ngpu":              1,
+    "lr":                0.001,
+    "batchSize":         64,
+    "modelRoot":         "best_models",
+    "nTrainSamples":     26000,
+    "nTestSamples":      1000,   
+    "hidden_dimension":   20, 
+    "embedding_dimension":  40,
+    "n_layers_lstm":        3,
+    "dataRoot":          "../../../data/new-lba/",
+    "labelFile":         "labelsdata.in",
+    "matFile":           "sequencedata.in",
+    "_comment":          "that's all",
+    "nEpochs":           200,
+    "gamma":             0.98,
+    "lrSteps":           10,
+    "summaryFile":      "Opttraining30.out"
+}
