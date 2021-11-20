@@ -1891,3 +1891,44 @@ Case 2:
 cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-case2-1
 julia simulate-zou2019.jl XXXXX 8000 1 10 1.0
 ```
+
+
+# Real data analysis
+
+## 1. Cats-dogs dataset
+
+From the [bistro project](https://github.com/crsl4/ccdprobs), we have the `cats-dogs.fasta` file with 8 taxa and ~1500 sites. The problem is that these are nucleotides, not aminoacids.
+
+From bio collaborators:
+- You can use this tool: https://web.expasy.org/translate/
+- https://www.khanacademy.org/science/ap-biology/gene-expression-and-regulation/translation/a/the-genetic-code-discovery-and-properties
+- In that tool you get all 6 frames (because DNA is 2 strands that are complementary to each other, you have frames 1,2,3 and -1,-2,-3)
+
+So, we use the `expasy` tool to copy one sequence at a time to create the `cats-dogs-aa.fasta` file (manually).
+However, for each nucleotide sequence, we get 6 aminoacid sequences (due to the reading frames) and we would have to select which one. 
+So, it is best if we find a dataset that is on aminoacids already.
+
+## 2. Birds dataset from Reddy et al 2017
+
+- Downloaded data from [dryad](https://datadryad.org/stash/dataset/doi:10.5061/dryad.6536v). File/folder info is there, but also copied into a readme file inside the folder `doi_10.5061_dryad.6536v__v1`.
+- These are also nucleotides
+
+## 3. Creating our own data
+
+- Using [NCBI](https://www.ncbi.nlm.nih.gov/genomes/VirusVariation/Database/nph-select.cgi) for Zika virus
+- Searching for Human, Mammal, Primate samples; any genome region
+- [Query link](https://www.ncbi.nlm.nih.gov/genomes/VirusVariation/Database/nph-select.cgi?cmd=show_builder&country=any&download-select=fP&genregion=any&go=database&host=Primate&isolation=isolation_blood&query_1_count=1124&query_1_count_genome_sets=0&query_1_country=any&query_1_genregion=any&query_1_host=Human&query_1_isolation=any&query_1_line=on&query_1_line_num=1&query_1_query_key=1&query_1_searchin=sequence&query_1_sequence=P&query_1_srcfilter_labs=include&query_1_taxid=64320&query_2_count=101&query_2_count_genome_sets=0&query_2_country=any&query_2_genregion=any&query_2_host=Primate&query_2_isolation=any&query_2_line=on&query_2_line_num=2&query_2_query_key=1&query_2_searchin=sequence&query_2_sequence=P&query_2_srcfilter_labs=include&query_2_taxid=64320&query_3_count=4&query_3_count_genome_sets=0&query_3_country=any&query_3_genregion=any&query_3_host=Mammal&query_3_isolation=any&query_3_line=on&query_3_line_num=3&query_3_query_key=1&query_3_searchin=sequence&query_3_sequence=P&query_3_srcfilter_labs=include&query_3_taxid=64320&query_4_count=0&query_4_count_genome_sets=0&query_4_country=any&query_4_genregion=any&query_4_host=Mammal&query_4_isolation=isolation_blood&query_4_line_num=4&query_4_query_key=1&query_4_searchin=sequence&query_4_sequence=P&query_4_srcfilter_labs=include&query_4_taxid=64320&query_5_count=357&query_5_count_genome_sets=0&query_5_country=any&query_5_genregion=any&query_5_host=Human&query_5_isolation=isolation_blood&query_5_line_num=5&query_5_query_key=1&query_5_searchin=sequence&query_5_sequence=P&query_5_srcfilter_labs=include&query_5_taxid=64320&query_6_count=0&query_6_count_genome_sets=0&query_6_country=any&query_6_genregion=any&query_6_host=Primate&query_6_isolation=isolation_blood&query_6_line_num=6&query_6_query_key=1&query_6_searchin=sequence&query_6_sequence=P&query_6_srcfilter_labs=include&query_6_taxid=64320&searchin=sequence&sequence=P&srcfilter_labs=include&taxid=64320)
+- Manually selected (accession, length, host, country, collection year):
+       - BBA85762, 3423, Homo sapiens, Japan, 2016
+       - QIH53581, 3423, Homo sapiens, Brazil, 2017
+       - BAP47441, 3423, Simiiformes, Uganda, 1947
+       - ANG09399, 3423, Homo sapiens, Honduras, 2016
+       - AXF50052, 3423, Mus Musculus, Colombia, 2016
+       - AWW21402, 3423, Simiiformes, Cambodia, 2016
+       - AYI50274, 3423, Macaca mulatta, xxxxx, 2015
+- Downloaded as `FASTA.fa`. All sequences have the same length, so no need to align.
+- The website creates a tree which is downloaded as `tree.nwk`. This tree is strange because it puts Macaca mulatta right in the middle of homo sapiens.
+
+
+
+
