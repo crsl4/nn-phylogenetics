@@ -1920,6 +1920,7 @@ So, it is best if we find a dataset that is on aminoacids already.
 - Searching for Human, Mammal, Primate samples; any genome region
 - [Query link](https://www.ncbi.nlm.nih.gov/genomes/VirusVariation/Database/nph-select.cgi?cmd=show_builder&country=any&download-select=fP&genregion=any&go=database&host=Primate&isolation=isolation_blood&query_1_count=1124&query_1_count_genome_sets=0&query_1_country=any&query_1_genregion=any&query_1_host=Human&query_1_isolation=any&query_1_line=on&query_1_line_num=1&query_1_query_key=1&query_1_searchin=sequence&query_1_sequence=P&query_1_srcfilter_labs=include&query_1_taxid=64320&query_2_count=101&query_2_count_genome_sets=0&query_2_country=any&query_2_genregion=any&query_2_host=Primate&query_2_isolation=any&query_2_line=on&query_2_line_num=2&query_2_query_key=1&query_2_searchin=sequence&query_2_sequence=P&query_2_srcfilter_labs=include&query_2_taxid=64320&query_3_count=4&query_3_count_genome_sets=0&query_3_country=any&query_3_genregion=any&query_3_host=Mammal&query_3_isolation=any&query_3_line=on&query_3_line_num=3&query_3_query_key=1&query_3_searchin=sequence&query_3_sequence=P&query_3_srcfilter_labs=include&query_3_taxid=64320&query_4_count=0&query_4_count_genome_sets=0&query_4_country=any&query_4_genregion=any&query_4_host=Mammal&query_4_isolation=isolation_blood&query_4_line_num=4&query_4_query_key=1&query_4_searchin=sequence&query_4_sequence=P&query_4_srcfilter_labs=include&query_4_taxid=64320&query_5_count=357&query_5_count_genome_sets=0&query_5_country=any&query_5_genregion=any&query_5_host=Human&query_5_isolation=isolation_blood&query_5_line_num=5&query_5_query_key=1&query_5_searchin=sequence&query_5_sequence=P&query_5_srcfilter_labs=include&query_5_taxid=64320&query_6_count=0&query_6_count_genome_sets=0&query_6_country=any&query_6_genregion=any&query_6_host=Primate&query_6_isolation=isolation_blood&query_6_line_num=6&query_6_query_key=1&query_6_searchin=sequence&query_6_sequence=P&query_6_srcfilter_labs=include&query_6_taxid=64320&searchin=sequence&sequence=P&srcfilter_labs=include&taxid=64320)
 - Manually selected (accession, length, host, country, collection year):
+
        - BBA85762, 3423, Homo sapiens, Japan, 2016
        - QIH53581, 3423, Homo sapiens, Brazil, 2017
        - BAP47441, 3423, Simiiformes, Uganda, 1947
@@ -1927,6 +1928,7 @@ So, it is best if we find a dataset that is on aminoacids already.
        - AXF50052, 3423, Mus Musculus, Colombia, 2016
        - AWW21402, 3423, Simiiformes, Cambodia, 2016
        - AYI50274, 3423, Macaca mulatta, xxxxx, 2015
+
 - Downloaded as `FASTA.fa`. All sequences have the same length, so no need to align.
 - The website creates a tree which is downloaded as `tree.nwk`. This tree is strange because it puts Macaca mulatta right in the middle of homo sapiens.
 
