@@ -1929,6 +1929,62 @@ So, it is best if we find a dataset that is on aminoacids already.
 - Downloaded as `FASTA.fa`. All sequences have the same length, so no need to align.
 - The website creates a tree which is downloaded as `tree.nwk`. This tree is strange because it puts Macaca mulatta right in the middle of homo sapiens.
 
+## Creating files with 4 taxa
 
+Our dataset has 7 species, so we need to create subsets of 4 to fit in our NN.
 
+```julia
+data = readlines("data/FASTA.fa")
 
+taxa = []
+seqs = []
+
+seq = ""
+for l in data
+   if occursin(">",l)
+      push!(taxa,l)
+      push!(seqs,seq) ##push previous seq
+      seq = ""
+   else
+      seq *= l
+   end
+end
+push!(seqs,seq) ##push last seq
+
+## by the way it is constructed, we have an extra empty seq in seqs:
+deleteat!(seqs, 1)
+```
+
+Now we have two vectors: `taxa` with the taxon names and `seqs` with the sequences.
+
+First, we create a translate table with taxon names:
+```julia
+using DataFrames, CSV
+df = DataFrame(id=1:length(taxa), name=taxa)
+CSV.write("data/fasta-table.csv",df)
+```
+
+Now, we create one datafile for each combination:
+```r
+> choose(7,4)
+[1] 35
+```
+
+```julia
+using Combinatorics
+comb = collect(combinations(1:length(taxa),4))
+## 35-element Vector{Vector{Int64}}:
+
+i = 1
+for c in comb
+   io = open(string("data/zika-fasta",i,".fa"), "w")
+   for j in c
+      write(io, string(">",j))
+      write(io, "\n")
+      write(io, seqs[j])
+      write(io, "\n")
+   end
+   close(io)
+   i += 1
+end   
+```
