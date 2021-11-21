@@ -1,6 +1,7 @@
 # Neural networks for phylogenetic inference
 
 - Claudia Solis-Lemus
+- Shengwen Yang
 - Leonardo Zepeda-Nunez
 
 ## Basic simulation with 4 taxa
