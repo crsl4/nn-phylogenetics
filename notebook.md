@@ -1991,3 +1991,7 @@ for c in comb
    i += 1
 end   
 ```
+
+## Quartet puzzling
+
+We can do the quartet puzzling step with Quartet Max Cut. It needs an input file that is one line with each quartet separated by a space in the form of a split: "1,2|3,4".
