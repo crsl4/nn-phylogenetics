@@ -2005,9 +2005,72 @@ We can do the quartet puzzling step with Quartet Max Cut. It needs an input file
 
 # Continuation: Simulate trees n=5 (quintets)
 
-We want to simulate data on the 5-taxon tree:
+We want to simulate data on the 5-taxon tree. We had to download PAML again because the old `evolver` executable did not run in the new mac OS.
+
+1. Git clone: `git clone https://github.com/abacus-gene/paml`
+2. Inside `src`, `make`:
+```
+$ make
+cc  -O3 -Wall -Wno-unused-result -c baseml.c
+cc  -O3 -Wall -Wno-unused-result -c tools.c
+cc  -O3 -Wall -Wno-unused-result -o baseml baseml.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c codeml.c
+codeml.c:5052:24: warning: if statement has empty body [-Wempty-body]
+         if (com.getSE);
+                       ^
+codeml.c:5052:24: note: put the semicolon on a separate line to silence this warning
+codeml.c:6574:14: warning: using floating point absolute value function 'fabs' when argument is of integer type [-Wabsolute-value]
+         if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+             ^
+codeml.c:6574:14: note: use function 'abs' instead
+         if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+             ^~~~
+             abs
+codeml.c:6991:11: warning: using floating point absolute value function 'fabs' when argument is of integer type [-Wabsolute-value]
+      if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+          ^
+codeml.c:6991:11: note: use function 'abs' instead
+      if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+          ^~~~
+          abs
+3 warnings generated.
+cc  -O3 -Wall -Wno-unused-result -o codeml codeml.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c basemlg.c
+cc  -O3 -Wall -Wno-unused-result -o basemlg basemlg.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c mcmctree.c
+cc  -O3 -Wall -Wno-unused-result -o mcmctree mcmctree.c tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -o infinitesites -D INFINITESITES mcmctree.c tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c pamp.c
+cc  -O3 -Wall -Wno-unused-result -o pamp pamp.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c evolver.c
+cc  -O3 -Wall -Wno-unused-result -o evolver evolver.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c yn00.c
+cc  -O3 -Wall -Wno-unused-result -o yn00 yn00.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result   -c -o chi2.o chi2.c
+cc  -O3 -Wall -Wno-unused-result -o chi2 chi2.c -lm 
+
+$ ls
+BFdriver.c    basemlg       codeml.ctl    mcmctree.c    tools.o
+Makefile      basemlg.c     codeml.o      mcmctree.ctl  treespace.c
+Makefile.VC   basemlg.o     ds.c          mcmctree.o    treesub.c
+README.txt    chi2          evolver       paml.h        yn00
+baseml        chi2.c        evolver.c     pamp          yn00.c
+baseml.c      chi2.o        evolver.o     pamp.c        yn00.o
+baseml.ctl    codeml        infinitesites pamp.o
+baseml.o      codeml.c      mcmctree      tools.c
+```
+3. Copy `evolver` executable to `simulations-5taxa/scripts`.
 
 ```shell
 cd nn-phylogenetics/simulations-5taxa/scripts
-julia simulate-n5.jl 12062021 100000
+julia simulate-n5.jl 12062021 10000
 ```
+
+We do 10000 for now, but I think we will need more for 5 taxa.
+
+We now move all files to a subfolder:
+```shell
+mkdir sim-5taxa
+mv rep*.dat sim-5taxa
+```
+and this subfolder is added to the google drive.

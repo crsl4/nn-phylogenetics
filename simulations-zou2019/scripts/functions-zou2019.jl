@@ -18,7 +18,7 @@ end
 ## modelfile: we chose one file from the ones provided by PAML with the S matrix
 ## n= number of leaves
 function createCtlFile(name::String, tree::String, s::Integer, L::Integer, alpha::Float64,
-                       model::Integer, modelfile::String, n=4::Integer)
+                       model::Integer, modelfile::String; n=4::Integer)
     str = """0        * 0: paml format (mc.paml); 1:paup format (mc.nex)
 $s       * random number seed (odd number)
 
@@ -257,8 +257,8 @@ end
 ## sequences saved to outfile: 4 x L
 ## append=true means that the file already exists and we append the
 ## sequences to the existing file
-function writeSequence2File(name::String, L::Integer, outfile::String ; append=app::Bool)
-    if app
+function writeSequence2File(name::String, L::Integer, outfile::String ; append=true::Bool)
+    if append
         f = open(outfile, "a")
     else
         f = open(outfile, "w")

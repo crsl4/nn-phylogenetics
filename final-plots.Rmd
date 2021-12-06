@@ -142,7 +142,129 @@ library(plotly)
 plot_ly(x=dff$z,y=dff$b,z=dff$accuracy, type="surface")
 ```
 
-## 3. Training epochs
+## 3. Learning dynamics for simulation datasets
+
+Color palettes
+```{r}
+library(ggplot2)
+library(viridis)
+library(RColorBrewer)
+cbp1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+          "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+display.brewer.all(colorblindFriendly = TRUE)
+```
+
+We want to do for these cases:
+- c=1.0, b=1.0, a=2
+- c=1.0, b=1.0, a=10
+- c=1.0, b=1.0, a=40
+
+### Loss dynamics
+
+Reading the csv file:
+```{r}
+dat2 = read.csv("phylo-nn-googledrive/outputs/PlotsData/testLoss1300.csv", header=FALSE)
+dat3 = read.csv("phylo-nn-googledrive/outputs/PlotsData/trainLoss1300.csv", header=FALSE)
+str(dat2)
+str(dat3)
+```
+
+We have 1300 rows for training loss, but we only want 130 so that it match the testing loss. For the testing loss, we have testing loss every 10 epochs, but for the training loss we have for every single epoch.
+```{r}
+dat3.2 = dat3[dat3$V1 %% 10 == 0,]
+```
+
+Need to append all loss data:
+```{r}
+dat2$type = "testing"
+dat3.2$type = "training"
+
+dat = rbind(dat2,dat3.2)
+str(dat)
+```
+
+```{r}
+p = ggplot(dat, aes(x=V1,y=V2, color=type))+
+  geom_line(size=1) + 
+    scale_color_brewer(palette="Paired") +
+  xlab("Epoch") + ylab("Loss")+
+  theme(
+    plot.title = element_text(hjust=0.5, size=rel(1.6)),
+    axis.title.x = element_text(size=rel(1.7)),
+    axis.title.y = element_text(size=rel(1.7), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(1.6)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/loss-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+
+### Accuracy dynamics
+
+Reading the csv file:
+```{r}
+dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/EpochAccuracy1300.csv", header=FALSE)
+str(dat1)
+dat = read.csv("phylo-nn-googledrive/outputs/PlotsData/SixMethodsComparison.csv", header=TRUE)
+str(dat)
+```
+
+
+```{r}
+c=1
+b=1
+a=2
+
+## recall switch values of a and b:
+df = dat[(dat$a == b & dat$b == a & dat$c == c),]
+```
+
+
+```{r}
+# nj, ml, bi, zou, lstm, optlstm
+cols = RColorBrewer::brewer.pal(6, "YlGnBu") 
+
+p = ggplot(dat1, aes(x=V1,y=V2))+
+  geom_line(size=1, color=cols[6]) +
+  geom_hline(yintercept = df$NJ, lty = 3, color=cols[1], size = 1.2) +
+  geom_hline(yintercept = df$ML, lty = 3, color=cols[2], size = 1.2) +
+  geom_hline(yintercept = df$BI, lty = 3, color=cols[3], size = 1.2) +
+  geom_hline(yintercept = df$Zou, lty = 3, color=cols[4], size = 1.2) +
+  xlab("Epoch") + ylab("Testing accuracy")+
+  ylim(c(0,1.1)) +
+  theme(
+    plot.title = element_text(hjust=0.5, size=rel(1.6)),
+    axis.title.x = element_text(size=rel(1.7)),
+    axis.title.y = element_text(size=rel(1.7), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(1.6)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/loss-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+
+
+## 3. Learning dynamics for heterogeneous dataset
 
 Color palettes
 ```{r}
@@ -210,19 +332,6 @@ Reading the csv file:
 ```{r}
 dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/EpochAccuracy1300.csv", header=FALSE)
 str(dat1)
-dat = read.csv("phylo-nn-googledrive/outputs/PlotsData/SixMethodsComparison.csv", header=TRUE)
-str(dat)
-```
-
-We want to do for these cases:
-- c=1.0, b=1.0, a=2
-```{r}
-c=1
-b=1
-a=2
-
-## recall switch values of a and b:
-df = dat[(dat$a == b & dat$b == a & dat$c == c),]
 ```
 
 
@@ -232,12 +341,8 @@ cols = RColorBrewer::brewer.pal(6, "YlGnBu")
 
 p = ggplot(dat1, aes(x=V1,y=V2))+
   geom_line(size=1, color=cols[6]) +
-  geom_hline(yintercept = df$NJ, lty = 3, color=cols[1], size = 1.2) +
-  geom_hline(yintercept = df$ML, lty = 3, color=cols[2], size = 1.2) +
-  geom_hline(yintercept = df$BI, lty = 3, color=cols[3], size = 1.2) +
-  geom_hline(yintercept = df$Zou, lty = 3, color=cols[4], size = 1.2) +
   xlab("Epoch") + ylab("Testing accuracy")+
-  ylim(c(0,1.1)) +
+  ylim(c(0,0.9)) +
   theme(
     plot.title = element_text(hjust=0.5, size=rel(1.6)),
     axis.title.x = element_text(size=rel(1.7)),
@@ -253,7 +358,7 @@ p = ggplot(dat1, aes(x=V1,y=V2))+
   )
 
 
-pdf("plots/loss-dynamics.pdf",height=7, width=7)
+pdf("plots/acc-dynamics.pdf",height=7, width=7)
 p
 dev.off()
 ```

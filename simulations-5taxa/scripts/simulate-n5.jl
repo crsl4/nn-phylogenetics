@@ -6,7 +6,7 @@
 ## Claudia April 2020
 
 using PhyloNetworks, Random, Distributions, Combinatorics
-include("functions-zou2019.jl")
+include("../../simulations-zou2019/scripts/functions-zou2019.jl")
 
 ## Input
 rseed = 03011058
@@ -51,10 +51,13 @@ for i in 1:nrep
     createCtlFile(namectl, tree, seeds[i], L, ratealpha, model, modeldatfile, n=5)
     run(`./evolver 7 MCaa.dat`)
 
-    writeSequence2File("mc.paml",L,outfileseq,append=app)
-    run(`rm mc.paml`)
-    run(`rm rep-$i.dat`)
+    writeSequence2File("mc.txt",L,outfileseq,append=app)
+    run(`rm mc.txt`)
+#    run(`rm rep-$i.dat`)
 end
+
+close(f)
+close(f2)
 
 
 

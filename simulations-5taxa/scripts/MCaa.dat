@@ -1,11 +1,11 @@
 0        * 0: paml format (mc.paml); 1:paup format (mc.nex)
-478199177       * random number seed (odd number)
+1560255945       * random number seed (odd number)
 
 5 1550 1   * <# seqs>  <# sites>  <# replicates>
 
 -1         * <tree length, use -1 if tree below has absolute branch lengths>
 
-(2:0.6099311204029694,(1:0.25100106509126596,((4:0.8882272121382002,5:0.45055284134220774):0.25415796227693876,3:0.5761651152326095):0.9996328941368531):0.42028981418368616);
+(2:0.6020034200657365,(1:0.5503195794609685,((3:0.5427796535111271,4:0.6286812570145519):0.6095913753390036,5:0.6086923589007862):0.33914897399847455):0.07211048647375894);
 
 0.1580288 1        * <alpha; see notes below>  <#categories for discrete gamma>
 3 dayhoff.dat * <model> [aa substitution rate file, need only if model=2 or 3]
