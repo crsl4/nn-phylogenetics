@@ -1992,6 +1992,11 @@ for c in comb
 end   
 ```
 
+### Removing 7th taxon
+
+The 7th taxon (see `FASTA.fa`) is "BBA85762, 3423, Homo sapiens, Japan, 2016" which contains missing sites X. Because our NN model was not trained with missing sites, we will remove this taxon from the dataset.
+
+
 ## Quartet puzzling
 
 We can do the quartet puzzling step with Quartet Max Cut. It needs an input file that is one line with each quartet separated by a space in the form of a split: "1,2|3,4".
