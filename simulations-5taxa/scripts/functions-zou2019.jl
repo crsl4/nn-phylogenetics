@@ -249,3 +249,32 @@ function adjacentedges(centeredge::PhyloNetworks.Edge)
     end
     return edges
 end
+
+
+## function to read the simulated sequences from PAML
+## and write without taxon names for the NN
+## sequences saved to outfile: 4 x L
+## append=true means that the file already exists and we append the
+## sequences to the existing file
+function writeSequence2File(name::String, L::Integer, outfile::String ; append=app::Bool)
+    if app
+        f = open(outfile, "a")
+    else
+        f = open(outfile, "w")
+    end
+    mc = readlines(name)
+    mc = mc[mc .!= ""]
+    ## assumes phylip format so that first row is "n L"
+    ## we do i=2 first to have the same alll vector
+    for i in 2:length(mc)
+        mm = split(mc[i])
+        @show mm[1]
+        seq = join(mm[2:end])
+        write(f,seq)
+        write(f,"\n")
+    end
+    close(f)
+end
+
+
+

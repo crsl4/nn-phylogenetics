@@ -1558,9 +1558,8 @@ Dimensions of files:
 
 Next steps:
 - simulations for 5 taxa (don't do the one hot encoding)
-- read existing NN papers
-- compare with other standard inference methods
-
+- read existing NN papers (done)
+- compare with other standard inference methods (done)
 
 
 ## Using Zou2019 script to simulate trees n=5 (quintets)
@@ -1569,6 +1568,8 @@ Created file `simulate-n5.jl` and `functions.jl` which is a copy of the function
 
 with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
 Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
+
+After all work done on quartets, we want to explore the quintets again. See below.
 
 # Onboarding Zelin and Shengwen
 
@@ -2000,3 +2001,13 @@ The 7th taxon (see `FASTA.fa`) is "BBA85762, 3423, Homo sapiens, Japan, 2016" wh
 ## Quartet puzzling
 
 We can do the quartet puzzling step with Quartet Max Cut. It needs an input file that is one line with each quartet separated by a space in the form of a split: "1,2|3,4".
+
+
+# Continuation: Simulate trees n=5 (quintets)
+
+We want to simulate data on the 5-taxon tree:
+
+```shell
+cd nn-phylogenetics/simulations-5taxa/scripts
+julia simulate-n5.jl 12062021 100000
+```
