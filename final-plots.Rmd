@@ -41,8 +41,8 @@ Plotting results:
 library(ggplot2)
 
 p <- ggplot(df, aes(x=log(c), y=accuracy, color=method))+
-  geom_point(size=2.5) + geom_line(size=1.25) +
-  scale_color_brewer(palette="YlGnBu", type="div") +
+  geom_point(size=2) + geom_line(size=1.1, alpha=0.5) +
+  scale_color_brewer(palette="Dark2", type="div") +
   xlab("c") + ylab("Testing accuracy") +
   scale_x_continuous(breaks=log(c(0.01,0.1,1)), labels=c("0.01","0.1","1")) +
       theme(
@@ -159,12 +159,12 @@ We want to do for these cases:
 - c=1.0, b=1.0, a=10
 - c=1.0, b=1.0, a=40
 
-### Loss dynamics
+### Loss dynamics (data 1: 88422 c=1.0, b=1.0, a=2)
 
 Reading the csv file:
 ```{r}
-dat2 = read.csv("phylo-nn-googledrive/outputs/PlotsData/testLoss1300.csv", header=FALSE)
-dat3 = read.csv("phylo-nn-googledrive/outputs/PlotsData/trainLoss1300.csv", header=FALSE)
+dat2 = read.csv("phylo-nn-googledrive/outputs/PlotsData/88422testLoss1300.csv", header=FALSE)
+dat3 = read.csv("phylo-nn-googledrive/outputs/PlotsData/88422trainLoss1300.csv", header=FALSE)
 str(dat2)
 str(dat3)
 ```
@@ -187,14 +187,15 @@ str(dat)
 p = ggplot(dat, aes(x=V1,y=V2, color=type))+
   geom_line(size=1) + 
     scale_color_brewer(palette="Paired") +
+#  ylim(c(0,0.05)) + 
   xlab("Epoch") + ylab("Loss")+
   theme(
     plot.title = element_text(hjust=0.5, size=rel(1.6)),
-    axis.title.x = element_text(size=rel(1.7)),
-    axis.title.y = element_text(size=rel(1.7), angle=90, vjust=0.5, hjust=0.5),
+    axis.title.x = element_text(size=rel(2.2)),
+    axis.title.y = element_text(size=rel(2.2), angle=90, vjust=0.5, hjust=0.5),
     axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
     axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
-    legend.text=element_text(size=rel(1.6)), 
+    legend.text=element_text(size=rel(2.0)), 
     legend.title=element_blank(),
     legend.position = "bottom",
     panel.background = element_blank(),
@@ -203,17 +204,17 @@ p = ggplot(dat, aes(x=V1,y=V2, color=type))+
   )
 
 
-pdf("plots/loss-dynamics.pdf",height=7, width=7)
+pdf("plots/88422loss-dynamics.pdf",height=7, width=7)
 p
 dev.off()
 ```
 
 
-### Accuracy dynamics
+### Accuracy dynamics (data 1: 88422 c=1.0, b=1.0, a=2)
 
 Reading the csv file:
 ```{r}
-dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/EpochAccuracy1300.csv", header=FALSE)
+dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/88422EpochAccuracy1300.csv", header=FALSE)
 str(dat1)
 dat = read.csv("phylo-nn-googledrive/outputs/PlotsData/SixMethodsComparison.csv", header=TRUE)
 str(dat)
@@ -232,18 +233,126 @@ df = dat[(dat$a == b & dat$b == a & dat$c == c),]
 
 ```{r}
 # nj, ml, bi, zou, lstm, optlstm
-cols = RColorBrewer::brewer.pal(6, "YlGnBu") 
+cols = RColorBrewer::brewer.pal(6, "Dark2") 
 
 p = ggplot(dat1, aes(x=V1,y=V2))+
   geom_line(size=1, color=cols[6]) +
-  geom_hline(yintercept = df$NJ, lty = 3, color=cols[1], size = 1.2) +
-  geom_hline(yintercept = df$ML, lty = 3, color=cols[2], size = 1.2) +
-  geom_hline(yintercept = df$BI, lty = 3, color=cols[3], size = 1.2) +
-  geom_hline(yintercept = df$Zou, lty = 3, color=cols[4], size = 1.2) +
-  xlab("Epoch") + ylab("Testing accuracy")+
+  geom_hline(yintercept = df$NJ, lty = 2, color=cols[1], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$ML, lty = 2, color=cols[2], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$BI, lty = 2, color=cols[3], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$Zou, lty = 2, color=cols[4], size = 1, alpha=0.5) +
+  geom_hline(yintercept=0.33, linetype = "dotted", color="gray", size=2) +
+  xlab("") + ylab("Testing accuracy")+
+  ggtitle(paste0("a = ",a, "b, b = ", b, ", c = ", c)) +
   ylim(c(0,1.1)) +
   theme(
+    plot.title = element_text(hjust=0.5, size=rel(3.0)),
+    axis.title.x = element_text(size=rel(2.2)),
+    axis.title.y = element_text(size=rel(2.2), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(1.6)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/88422acc-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+### Loss dynamics (data 2: 114134 c=1.0, b=1.0, a=10)
+
+Reading the csv file:
+```{r}
+dat2 = read.csv("phylo-nn-googledrive/outputs/PlotsData/114134testLoss1300.csv", header=FALSE)
+dat3 = read.csv("phylo-nn-googledrive/outputs/PlotsData/114134trainLoss1300.csv", header=FALSE)
+str(dat2)
+str(dat3)
+```
+
+We have 1300 rows for training loss, but we only want 130 so that it match the testing loss. For the testing loss, we have testing loss every 10 epochs, but for the training loss we have for every single epoch.
+```{r}
+dat3.2 = dat3[dat3$V1 %% 10 == 0,]
+```
+
+Need to append all loss data:
+```{r}
+dat2$type = "testing"
+dat3.2$type = "training"
+
+dat = rbind(dat2,dat3.2)
+str(dat)
+```
+
+```{r}
+p = ggplot(dat, aes(x=V1,y=V2, color=type))+
+  geom_line(size=1) + 
+    scale_color_brewer(palette="Paired") +
+#  ylim(c(0,0.05)) + 
+  xlab("Epoch") + ylab("")+
+  theme(
     plot.title = element_text(hjust=0.5, size=rel(1.6)),
+    axis.title.x = element_text(size=rel(2.2)),
+    axis.title.y = element_text(size=rel(2.2), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(2.0)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/114134loss-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+
+### Accuracy dynamics (data 2: 114134 c=1.0, b=1.0, a=10)
+
+Reading the csv file:
+```{r}
+dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/114134EpochAccuracy1300.csv", header=FALSE)
+str(dat1)
+dat = read.csv("phylo-nn-googledrive/outputs/PlotsData/SixMethodsComparison.csv", header=TRUE)
+str(dat)
+```
+
+
+```{r}
+c=1
+b=1
+a=10
+
+## recall switch values of a and b:
+df = dat[(dat$a == b & dat$b == a & dat$c == c),]
+```
+
+
+```{r}
+# nj, ml, bi, zou, lstm, optlstm
+cols = RColorBrewer::brewer.pal(6, "Dark2") 
+
+p = ggplot(dat1, aes(x=V1,y=V2))+
+  geom_line(size=1, color=cols[6]) +
+  geom_hline(yintercept = df$NJ, lty = 2, color=cols[1], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$ML, lty = 2, color=cols[2], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$BI, lty = 2, color=cols[3], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$Zou, lty = 2, color=cols[4], size = 1, alpha=0.5) +
+  geom_hline(yintercept=0.33, linetype = "dotted", color="gray", size=2) +
+  xlab("") + ylab("")+
+  ggtitle(paste0("a = ",a, "b, b = ", b, ", c = ", c)) +
+  ylim(c(0,1.1)) +
+  theme(
+    plot.title = element_text(hjust=0.5, size=rel(3.0)),
     axis.title.x = element_text(size=rel(1.7)),
     axis.title.y = element_text(size=rel(1.7), angle=90, vjust=0.5, hjust=0.5),
     axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
@@ -257,11 +366,116 @@ p = ggplot(dat1, aes(x=V1,y=V2))+
   )
 
 
-pdf("plots/loss-dynamics.pdf",height=7, width=7)
+pdf("plots/114134acc-dynamics.pdf",height=7, width=7)
 p
 dev.off()
 ```
 
+### Loss dynamics (data 3: 346266 c=1.0, b=1.0, a=40)
+
+Reading the csv file:
+```{r}
+dat2 = read.csv("phylo-nn-googledrive/outputs/PlotsData/346266testLoss1300.csv", header=FALSE)
+dat3 = read.csv("phylo-nn-googledrive/outputs/PlotsData/346266trainLoss1300.csv", header=FALSE)
+str(dat2)
+str(dat3)
+```
+
+We have 1300 rows for training loss, but we only want 130 so that it match the testing loss. For the testing loss, we have testing loss every 10 epochs, but for the training loss we have for every single epoch.
+```{r}
+dat3.2 = dat3[dat3$V1 %% 10 == 0,]
+```
+
+Need to append all loss data:
+```{r}
+dat2$type = "testing"
+dat3.2$type = "training"
+
+dat = rbind(dat2,dat3.2)
+str(dat)
+```
+
+```{r}
+p = ggplot(dat, aes(x=V1,y=V2, color=type))+
+  geom_line(size=1) + 
+    scale_color_brewer(palette="Paired") +
+#  ylim(c(0,0.05)) + 
+  xlab("Epoch") + ylab("")+
+  theme(
+    plot.title = element_text(hjust=0.5, size=rel(1.6)),
+    axis.title.x = element_text(size=rel(2.2)),
+    axis.title.y = element_text(size=rel(2.2), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(2.0)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/346266loss-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+
+### Accuracy dynamics (data 3: 346266 c=1.0, b=1.0, a=40)
+
+Reading the csv file:
+```{r}
+dat1 = read.csv("phylo-nn-googledrive/outputs/PlotsData/346266EpochAccuracy1300.csv", header=FALSE)
+str(dat1)
+dat = read.csv("phylo-nn-googledrive/outputs/PlotsData/SixMethodsComparison.csv", header=TRUE)
+str(dat)
+```
+
+
+```{r}
+c=1
+b=1
+a=40
+
+## recall switch values of a and b:
+df = dat[(dat$a == b & dat$b == a & dat$c == c),]
+```
+
+
+```{r}
+# nj, ml, bi, zou, lstm, optlstm
+cols = RColorBrewer::brewer.pal(6, "Dark2") 
+
+p = ggplot(dat1, aes(x=V1,y=V2))+
+  geom_line(size=1, color=cols[6]) +
+  geom_hline(yintercept = df$NJ, lty = 2, color=cols[1], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$ML, lty = 2, color=cols[2], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$BI, lty = 2, color=cols[3], size = 1, alpha=0.5) +
+  geom_hline(yintercept = df$Zou, lty = 2, color=cols[4], size = 1, alpha=0.5) +
+  geom_hline(yintercept=0.33, linetype = "dotted", color="gray", size=2) +
+  xlab("") + ylab("")+
+  ggtitle(paste0("a = ",a, "b, b = ", b, ", c = ", c)) +
+  ylim(c(0,1.1)) +
+  theme(
+    plot.title = element_text(hjust=0.5, size=rel(3.0)),
+    axis.title.x = element_text(size=rel(1.7)),
+    axis.title.y = element_text(size=rel(1.7), angle=90, vjust=0.5, hjust=0.5),
+    axis.text.x = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    axis.text.y = element_text(colour="grey", size=rel(1.6), angle=0, hjust=.5, vjust=.5, face="plain"),
+    legend.text=element_text(size=rel(1.6)), 
+    legend.title=element_blank(),
+    legend.position = "bottom",
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "grey"),
+    strip.text = element_text(size = 17)
+  )
+
+
+pdf("plots/346266acc-dynamics.pdf",height=7, width=7)
+p
+dev.off()
+```
 
 
 ## 3. Learning dynamics for heterogeneous dataset
@@ -338,9 +552,11 @@ str(dat1)
 ```{r}
 # nj, ml, bi, zou, lstm, optlstm
 cols = RColorBrewer::brewer.pal(6, "YlGnBu") 
+#cols = RColorBrewer::brewer.pal(6, "Dark2") 
 
 p = ggplot(dat1, aes(x=V1,y=V2))+
   geom_line(size=1, color=cols[6]) +
+  geom_hline(yintercept=0.33, linetype = "dashed", color="gray") +
   xlab("Epoch") + ylab("Testing accuracy")+
   ylim(c(0,0.9)) +
   theme(
@@ -363,5 +579,168 @@ p
 dev.off()
 ```
 
-- c=1.0, b=1.0, a=10
-- c=1.0, b=1.0, a=40
+
+# Zika phylogenetic tree
+
+We download Quartet MaxCut from [here](http://research.haifa.ac.il/~ssagi/software/QMCN.tar.gz)
+
+We do julia code to convert xls file with quartets into QMC input:
+```
+cd("/Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/phylo-nn-googledrive/outputs/Real_Data")
+using CSV, DataFrames
+
+df = DataFrame(CSV.File("Real_Data_Prediction.csv"))
+
+qfile = "quartets.in"
+f = open(qfile,"w")
+
+for i in 1:size(df,1)
+write(f,df[i,:Predictions])
+write(f," ")
+end
+close(f)
+```
+
+Now, we run QMC. Usage: `./find-cut-Mac  qrtt=<quartets-file> [otre=<output tree name> (def MXCNtree.dat)]`
+
+```
+cd Dropbox/software
+./find-cut-Mac qrtt=/Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/phylo-nn-googledrive/outputs/Real_Data/quartets.in
+mv MXCNtree.dat /Users/Clauberry/Dropbox/Sharing/projects/present/leo-nn/nn-phylogenetics/phylo-nn-googledrive/outputs/Real_Data/
+```
+
+## Plotting tree in R
+
+```{r}
+library(ape)
+tre = read.tree("phylo-nn-googledrive/outputs/Real_Data/MXCNtree.dat")
+
+## Root at 1:
+tr <- root(tre, 1, resolve.root=TRUE)
+
+## Changing tips to taxon names (from fasta-table.csv)
+new_tiplabels <- c("Mus_musculus", "Simiiformes_Cambodia", "Macaca_mulatta", "Homo_sapiens_Brazil", "Simiiformes_Uganda", "Homo_sapiens_Honduras")
+tr$tip.label <- new_tiplabels
+
+plot(tr)
+```
+
+Compare to the tree obtained from NCBI:
+```{r}
+tr2 = read.tree("plots/tree.nwk")
+plot(tr2)
+
+tr2$tip.label
+
+## need to root on Mus musculus
+tr3 <- root(tr2, 3, resolve.root=TRUE)
+plot(tr3, use.edge.length = FALSE)
+```
+
+One thing that we can say is that the Simiiformes Uganda is a sequence from 1947 while all the others are from 2016. So, it could be misplaced due to differences in sequencing technologies.
+
+### Final plot with ggtree
+
+Need to reinstall packages:
+```{r}
+remotes::install_github("YuLab-SMU/ggtree")
+remotes::install_github("YuLab-SMU/tidytree")
+```
+
+```{r}
+library(ggimage)
+library(ggtree)
+library(ape)
+tre = read.tree("phylo-nn-googledrive/outputs/Real_Data/MXCNtree.dat")
+
+## Root at 1:
+tr <- root(tre, 1, resolve.root=TRUE)
+
+## Changing tips to taxon names (from fasta-table.csv)
+taxon.names <- c("Mus_musculus", "Simiiformes", "Macaca_mulatta", "Homo_sapiens", "Simiiformes", "Homo_sapiens")
+tr$tip.label <- taxon.names
+
+
+d <- ggimage::phylopic_uid(taxon.names)
+d$year <- c(2016, 2016, 2015, 2017, 1947, 2016)
+
+## have to change the uid for mouse because it does not appear:
+#d$uid[d$name == "Mus_musculus"] <- "F974A627-D22D-4A7B-865C-4AB6296566B2"
+d$uid[d$name == "Mus_musculus"] <- "3717bf88-d959-4bdd-aa69-54e3dccc53b6"
+
+p <- ggtree(tr) %<+% d + 
+  geom_tiplab(aes(image=uid), colour="gray", geom="phylopic", offset=0) +
+  geom_tiplab(aes(label=label), offset = .5, size=7) + xlim(NA, 8)
+#  theme(
+#    legend.title = element_blank(), 
+#    legend.position = "bottom",
+#    legend.text = element_text(size=12)
+#  )
+#  scale_color_viridis_c()
+
+pdf("plots/zika-tree.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+Can we show the tree in a cooler format?
+```{r}
+p2 <- ggtree(tr, layout="circular") %<+% d + 
+  geom_tiplab(aes(image=uid), colour="gray", geom="phylopic", offset=1.5) +
+  geom_tiplab(aes(label=label), offset = 1.5, size=7) + xlim(NA, 8)
+p3 <- open_tree(p2, angle=200)
+```
+
+### Final plot with ggtree and year
+
+```{r}
+tre = read.tree("phylo-nn-googledrive/outputs/Real_Data/MXCNtree.dat")
+
+## Root at 1:
+tr <- root(tre, 1, resolve.root=TRUE)
+
+## Changing tips to taxon names (from fasta-table.csv)
+taxon.names <- c("Mus_musculus", "Simiiformes1", "Macaca_mulatta", "Homo_sapiens1", "Simiiformes2", "Homo_sapiens2")
+tr$tip.label <- taxon.names
+
+
+taxon.names2 <- c("Mus_musculus", "Simiiformes", "Macaca_mulatta", "Homo_sapiens", "Simiiformes", "Homo_sapiens")
+d <- ggimage::phylopic_uid(taxon.names2)
+d$name <- c("Mus_musculus", "Simiiformes1", "Macaca_mulatta", "Homo_sapiens1", "Simiiformes2", "Homo_sapiens2")
+d$year <- c(2016, 2016, 2015, 2017, 1947, 2016)
+d$label2 <- c("Mus_musculus", "Simiiformes", "Macaca_mulatta", "Homo_sapiens", "Simiiformes", "Homo_sapiens")
+
+
+## have to change the uid for mouse because it does not appear:
+#d$uid[d$name == "Mus_musculus"] <- "F974A627-D22D-4A7B-865C-4AB6296566B2"
+d$uid[d$name == "Mus_musculus"] <- "3717bf88-d959-4bdd-aa69-54e3dccc53b6"
+
+p <- ggtree(tr, size=1.5) %<+% d + 
+  geom_tiplab(aes(image=uid, colour=as.factor(year)), geom="phylopic", offset=0, width=0.5) +
+  geom_tiplab(aes(label=label2), offset = .5, size=7) + xlim(NA, 8) +
+  scale_color_brewer(palette="Blues") +
+  theme(
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    legend.text = element_text(size=18)
+  )
+
+pdf("plots/zika-tree2.pdf",height=7, width=7)
+p
+dev.off()
+```
+
+
+Crazy ideas with emojis
+```{r}
+##devtools::install_github("GuangchuangYu/emojifont")
+library(emojifont)
+## Changing tips to taxon names (from fasta-table.csv)
+taxon.names <- c("mouse2", "monkey", "gorilla", "man", "monkey", "man")
+tr$tip.label <- taxon.names
+
+p <- ggtree(tr, layout = "circular", size=1) +  
+  geom_tiplab(parse="emoji", size=25, vjust=.25)
+
+p
+```

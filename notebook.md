@@ -2002,6 +2002,8 @@ The 7th taxon (see `FASTA.fa`) is "BBA85762, 3423, Homo sapiens, Japan, 2016" wh
 
 We can do the quartet puzzling step with Quartet Max Cut. It needs an input file that is one line with each quartet separated by a space in the form of a split: "1,2|3,4".
 
+See `final_plots.Rmd` for the plot of the tree.
+
 
 # Continuation: Simulate trees n=5 (quintets)
 
