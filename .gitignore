@@ -4,6 +4,7 @@ simulations
 *.h5
 *.in
 ms/research-fwd-init-phylo-nn/*
+phylo-nn-googledrive/*
 
 # Compiled source #
 ###################

@@ -1,6 +1,7 @@
 # Neural networks for phylogenetic inference
 
 - Claudia Solis-Lemus
+- Shengwen Yang
 - Leonardo Zepeda-Nunez
 
 ## Basic simulation with 4 taxa
@@ -1557,9 +1558,8 @@ Dimensions of files:
 
 Next steps:
 - simulations for 5 taxa (don't do the one hot encoding)
-- read existing NN papers
-- compare with other standard inference methods
-
+- read existing NN papers (done)
+- compare with other standard inference methods (done)
 
 
 ## Using Zou2019 script to simulate trees n=5 (quintets)
@@ -1568,6 +1568,8 @@ Created file `simulate-n5.jl` and `functions.jl` which is a copy of the function
 
 with simulation pipeline to simulate trees of size 5 (quintets). This script is not tested yet.
 Careful: this and previous scripts are not exploiting the fact that we could generate data from all possible roots. 
+
+After all work done on quartets, we want to explore the quintets again. See below.
 
 # Onboarding Zelin and Shengwen
 
@@ -1891,3 +1893,186 @@ Case 2:
 cd Dropbox/Sharing/projects/leo-nn/nn-phylogenetics/simulations-zou2019/simulations-lba-case2-1
 julia simulate-zou2019.jl XXXXX 8000 1 10 1.0
 ```
+
+
+# Real data analysis
+
+## 1. Cats-dogs dataset
+
+From the [bistro project](https://github.com/crsl4/ccdprobs), we have the `cats-dogs.fasta` file with 8 taxa and ~1500 sites. The problem is that these are nucleotides, not aminoacids.
+
+From bio collaborators:
+- You can use this tool: https://web.expasy.org/translate/
+- https://www.khanacademy.org/science/ap-biology/gene-expression-and-regulation/translation/a/the-genetic-code-discovery-and-properties
+- In that tool you get all 6 frames (because DNA is 2 strands that are complementary to each other, you have frames 1,2,3 and -1,-2,-3)
+
+So, we use the `expasy` tool to copy one sequence at a time to create the `cats-dogs-aa.fasta` file (manually).
+However, for each nucleotide sequence, we get 6 aminoacid sequences (due to the reading frames) and we would have to select which one. 
+So, it is best if we find a dataset that is on aminoacids already.
+
+## 2. Birds dataset from Reddy et al 2017
+
+- Downloaded data from [dryad](https://datadryad.org/stash/dataset/doi:10.5061/dryad.6536v). File/folder info is there, but also copied into a readme file inside the folder `doi_10.5061_dryad.6536v__v1`.
+- These are also nucleotides
+
+## 3. Creating our own data
+
+- Using [NCBI](https://www.ncbi.nlm.nih.gov/genomes/VirusVariation/Database/nph-select.cgi) for Zika virus
+- Searching for Human, Mammal, Primate samples; any genome region
+- [Query link](https://www.ncbi.nlm.nih.gov/genomes/VirusVariation/Database/nph-select.cgi?cmd=show_builder&country=any&download-select=fP&genregion=any&go=database&host=Primate&isolation=isolation_blood&query_1_count=1124&query_1_count_genome_sets=0&query_1_country=any&query_1_genregion=any&query_1_host=Human&query_1_isolation=any&query_1_line=on&query_1_line_num=1&query_1_query_key=1&query_1_searchin=sequence&query_1_sequence=P&query_1_srcfilter_labs=include&query_1_taxid=64320&query_2_count=101&query_2_count_genome_sets=0&query_2_country=any&query_2_genregion=any&query_2_host=Primate&query_2_isolation=any&query_2_line=on&query_2_line_num=2&query_2_query_key=1&query_2_searchin=sequence&query_2_sequence=P&query_2_srcfilter_labs=include&query_2_taxid=64320&query_3_count=4&query_3_count_genome_sets=0&query_3_country=any&query_3_genregion=any&query_3_host=Mammal&query_3_isolation=any&query_3_line=on&query_3_line_num=3&query_3_query_key=1&query_3_searchin=sequence&query_3_sequence=P&query_3_srcfilter_labs=include&query_3_taxid=64320&query_4_count=0&query_4_count_genome_sets=0&query_4_country=any&query_4_genregion=any&query_4_host=Mammal&query_4_isolation=isolation_blood&query_4_line_num=4&query_4_query_key=1&query_4_searchin=sequence&query_4_sequence=P&query_4_srcfilter_labs=include&query_4_taxid=64320&query_5_count=357&query_5_count_genome_sets=0&query_5_country=any&query_5_genregion=any&query_5_host=Human&query_5_isolation=isolation_blood&query_5_line_num=5&query_5_query_key=1&query_5_searchin=sequence&query_5_sequence=P&query_5_srcfilter_labs=include&query_5_taxid=64320&query_6_count=0&query_6_count_genome_sets=0&query_6_country=any&query_6_genregion=any&query_6_host=Primate&query_6_isolation=isolation_blood&query_6_line_num=6&query_6_query_key=1&query_6_searchin=sequence&query_6_sequence=P&query_6_srcfilter_labs=include&query_6_taxid=64320&searchin=sequence&sequence=P&srcfilter_labs=include&taxid=64320)
+- Manually selected (accession, length, host, country, collection year):
+
+       - BBA85762, 3423, Homo sapiens, Japan, 2016
+       - QIH53581, 3423, Homo sapiens, Brazil, 2017
+       - BAP47441, 3423, Simiiformes, Uganda, 1947
+       - ANG09399, 3423, Homo sapiens, Honduras, 2016
+       - AXF50052, 3423, Mus Musculus, Colombia, 2016
+       - AWW21402, 3423, Simiiformes, Cambodia, 2016
+       - AYI50274, 3423, Macaca mulatta, xxxxx, 2015
+
+- Downloaded as `FASTA.fa`. All sequences have the same length, so no need to align.
+- The website creates a tree which is downloaded as `tree.nwk`. This tree is strange because it puts Macaca mulatta right in the middle of homo sapiens.
+
+## Creating files with 4 taxa
+
+Our dataset has 7 species, so we need to create subsets of 4 to fit in our NN.
+
+```julia
+data = readlines("data/FASTA.fa")
+
+taxa = []
+seqs = []
+
+seq = ""
+for l in data
+   if occursin(">",l)
+      push!(taxa,l)
+      push!(seqs,seq) ##push previous seq
+      seq = ""
+   else
+      seq *= l
+   end
+end
+push!(seqs,seq) ##push last seq
+
+## by the way it is constructed, we have an extra empty seq in seqs:
+deleteat!(seqs, 1)
+```
+
+Now we have two vectors: `taxa` with the taxon names and `seqs` with the sequences.
+
+First, we create a translate table with taxon names:
+```julia
+using DataFrames, CSV
+df = DataFrame(id=1:length(taxa), name=taxa)
+CSV.write("data/fasta-table.csv",df)
+```
+
+Now, we create one datafile for each combination:
+```r
+> choose(7,4)
+[1] 35
+```
+
+```julia
+using Combinatorics
+comb = collect(combinations(1:length(taxa),4))
+## 35-element Vector{Vector{Int64}}:
+
+i = 1
+for c in comb
+   io = open(string("data/zika-fasta",i,".fa"), "w")
+   for j in c
+      write(io, string(">",j))
+      write(io, "\n")
+      write(io, seqs[j])
+      write(io, "\n")
+   end
+   close(io)
+   i += 1
+end   
+```
+
+### Removing 7th taxon
+
+The 7th taxon (see `FASTA.fa`) is "BBA85762, 3423, Homo sapiens, Japan, 2016" which contains missing sites X. Because our NN model was not trained with missing sites, we will remove this taxon from the dataset.
+
+
+## Quartet puzzling
+
+We can do the quartet puzzling step with Quartet Max Cut. It needs an input file that is one line with each quartet separated by a space in the form of a split: "1,2|3,4".
+
+See `final_plots.Rmd` for the plot of the tree.
+
+
+# Continuation: Simulate trees n=5 (quintets)
+
+We want to simulate data on the 5-taxon tree. We had to download PAML again because the old `evolver` executable did not run in the new mac OS.
+
+1. Git clone: `git clone https://github.com/abacus-gene/paml`
+2. Inside `src`, `make`:
+```
+$ make
+cc  -O3 -Wall -Wno-unused-result -c baseml.c
+cc  -O3 -Wall -Wno-unused-result -c tools.c
+cc  -O3 -Wall -Wno-unused-result -o baseml baseml.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c codeml.c
+codeml.c:5052:24: warning: if statement has empty body [-Wempty-body]
+         if (com.getSE);
+                       ^
+codeml.c:5052:24: note: put the semicolon on a separate line to silence this warning
+codeml.c:6574:14: warning: using floating point absolute value function 'fabs' when argument is of integer type [-Wabsolute-value]
+         if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+             ^
+codeml.c:6574:14: note: use function 'abs' instead
+         if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+             ^~~~
+             abs
+codeml.c:6991:11: warning: using floating point absolute value function 'fabs' when argument is of integer type [-Wabsolute-value]
+      if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+          ^
+codeml.c:6991:11: note: use function 'abs' instead
+      if (fabs(square((int)sqrt(k + 1.)) - (k + 1)) < 1e-5) 
+          ^~~~
+          abs
+3 warnings generated.
+cc  -O3 -Wall -Wno-unused-result -o codeml codeml.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c basemlg.c
+cc  -O3 -Wall -Wno-unused-result -o basemlg basemlg.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c mcmctree.c
+cc  -O3 -Wall -Wno-unused-result -o mcmctree mcmctree.c tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -o infinitesites -D INFINITESITES mcmctree.c tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c pamp.c
+cc  -O3 -Wall -Wno-unused-result -o pamp pamp.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c evolver.c
+cc  -O3 -Wall -Wno-unused-result -o evolver evolver.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result -c yn00.c
+cc  -O3 -Wall -Wno-unused-result -o yn00 yn00.o tools.o -lm 
+cc  -O3 -Wall -Wno-unused-result   -c -o chi2.o chi2.c
+cc  -O3 -Wall -Wno-unused-result -o chi2 chi2.c -lm 
+
+$ ls
+BFdriver.c    basemlg       codeml.ctl    mcmctree.c    tools.o
+Makefile      basemlg.c     codeml.o      mcmctree.ctl  treespace.c
+Makefile.VC   basemlg.o     ds.c          mcmctree.o    treesub.c
+README.txt    chi2          evolver       paml.h        yn00
+baseml        chi2.c        evolver.c     pamp          yn00.c
+baseml.c      chi2.o        evolver.o     pamp.c        yn00.o
+baseml.ctl    codeml        infinitesites pamp.o
+baseml.o      codeml.c      mcmctree      tools.c
+```
+3. Copy `evolver` executable to `simulations-5taxa/scripts`.
+
+```shell
+cd nn-phylogenetics/simulations-5taxa/scripts
+julia simulate-n5.jl 12062021 10000
+```
+
+We do 10000 for now, but I think we will need more for 5 taxa.
+
+We now move all files to a subfolder:
+```shell
+mkdir sim-5taxa
+mv rep*.dat sim-5taxa
+```
+and this subfolder is added to the google drive.

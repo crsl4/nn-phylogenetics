@@ -16,12 +16,13 @@ end
 ## alpha: rate for gamma
 ## model: see notebook.md for model options for PAML
 ## modelfile: we chose one file from the ones provided by PAML with the S matrix
+## n= number of leaves
 function createCtlFile(name::String, tree::String, s::Integer, L::Integer, alpha::Float64,
-                       model::Integer, modelfile::String)
+                       model::Integer, modelfile::String; n=4::Integer)
     str = """0        * 0: paml format (mc.paml); 1:paup format (mc.nex)
 $s       * random number seed (odd number)
 
-4 $L 1   * <# seqs>  <# sites>  <# replicates>
+$n $L 1   * <# seqs>  <# sites>  <# replicates>
 
 -1         * <tree length, use -1 if tree below has absolute branch lengths>
 
@@ -174,13 +175,13 @@ function sampleRootedMetricQuintet(l::Number,u::Number, ss::Integer)
     ## choose root randomly (or leave as is=balanced tree)
     r = rand(Uniform(0,1),1)[1]
     if(r<0.2)
-        rootatnode!(quartet,"1")
+        rootatnode!(quintet,"1")
     elseif(r<0.4)
-        rootatnode!(quartet,"2")
+        rootatnode!(quintet,"2")
     elseif(r<0.6)
-        rootatnode!(quartet,"3")
+        rootatnode!(quintet,"3")
     elseif(r<0.8)
-        rootatnode!(quartet,"4")
+        rootatnode!(quintet,"4")
     end
     ## setting branch lenghts
     for e in quintet.edge
@@ -256,8 +257,8 @@ end
 ## sequences saved to outfile: 4 x L
 ## append=true means that the file already exists and we append the
 ## sequences to the existing file
-function writeSequence2File(name::String, L::Integer, outfile::String ; append=app::Bool)
-    if app
+function writeSequence2File(name::String, L::Integer, outfile::String ; append=true::Bool)
+    if append
         f = open(outfile, "a")
     else
         f = open(outfile, "w")

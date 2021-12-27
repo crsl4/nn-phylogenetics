@@ -1,6 +1,7 @@
 # Neural networks for phylogenetic inference
 
 - Claudia Solis-Lemus
+- Shengwen Yang
 - Leonardo Zepeda-Nunez
 
 ## Motivation
