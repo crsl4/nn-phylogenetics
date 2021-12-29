@@ -185,6 +185,8 @@ class _DoubleEmbedding(torch.nn.Module):
         self.embedding_layer = nn.Embedding(length_dict, embeding_dim)
         self._res_module_1 = _ResidueModule(embeding_dim)
         self._res_module_2 = _ResidueModule(embeding_dim)
+        self._res_module_3 = _ResidueModule(embeding_dim)
+        self._res_module_4 = _ResidueModule(embeding_dim)
 
     def forward(self, x):
         # (none, 4, 1550)
@@ -219,49 +221,117 @@ class _DoubleEmbedding(torch.nn.Module):
         # and then apply the residual module 
 
         # [1,2,3,4,5],
-        G1 = self._res_module_2(d01 + d23 + d4)
+
+        G11 = self._res_module_3(self._res_module_2(d01 + d23) + d4)
+        G12 = self._res_module_3(self._res_module_2(d01 +  d4) + d23)
+        G13 = self._res_module_3(self._res_module_2(d23 +  d4) + d01)
+        G1 =  self._res_module_4(G11 + G12 + G13)
+
+        # G1 = self._res_module_2(G1 + d4)
 
         # [1,2,3,5,4],
-        G2 = self._res_module_2(d01 + d24 + d3) 
+
+        G21 = self._res_module_3(self._res_module_2(d01 + d24) + d3)
+        G22 = self._res_module_3(self._res_module_2(d01 +  d3) + d24)
+        G23 = self._res_module_3(self._res_module_2(d24 +  d3) + d01)
+        G2 =  self._res_module_4(G21 + G22 + G23)
+
+        # G2 = self._res_module_2(G2 + d3)
 
         # [1,2,4,5,3],
-        G3 = self._res_module_2(d01 + d34 + d2)    
+
+        G31 = self._res_module_3(self._res_module_2(d01 + d34) + d2)
+        G32 = self._res_module_3(self._res_module_2(d01 +  d2) + d34)
+        G33 = self._res_module_3(self._res_module_2(d34 +  d2) + d01)
+        G3 =  self._res_module_4(G31 + G32 + G33)
+
+        # G3 = self._res_module_2(G3 + d2)
         
         # [1,3,2,4,5],
-        G4 = self._res_module_2(d02 + d13 + d4)    
+
+        G41 = self._res_module_3(self._res_module_2(d02 + d13) + d4)
+        G42 = self._res_module_3(self._res_module_2(d02 +  d4) + d13)
+        G43 = self._res_module_3(self._res_module_2(d13 +  d4) + d02)
+        G4 =  self._res_module_4(G41 + G42 + G43)
 
         # [1,3,2,5,4],
-        G5 = self._res_module_2(d02 + d14 + d3)    
+
+        G51 = self._res_module_3(self._res_module_2(d02 + d14) + d3)
+        G52 = self._res_module_3(self._res_module_2(d02 +  d3) + d14)
+        G53 = self._res_module_3(self._res_module_2(d14 +  d3) + d02)
+        G5 =  self._res_module_4(G51 + G52 + G53)
 
         # [1,3,4,5,2],
-        G6 = self._res_module_2(d02 + d34 + d1) 
+
+        G61 = self._res_module_3(self._res_module_2(d02 + d34) + d1)
+        G62 = self._res_module_3(self._res_module_2(d02 +  d1) + d34)
+        G63 = self._res_module_3(self._res_module_2(d34 +  d1) + d02)
+        G6 =  self._res_module_4(G61 + G62 + G63)
         
         # [1,4,2,3,5],
-        G7 = self._res_module_2(d03 + d12 + d4) 
+
+        G71 = self._res_module_3(self._res_module_2(d03 + d12) + d4)
+        G72 = self._res_module_3(self._res_module_2(d03 +  d4) + d12)
+        G73 = self._res_module_3(self._res_module_2(d12 +  d4) + d03)
+        G7 =  self._res_module_4(G71 + G72 + G73)
         
         # [1,4,2,5,3],
-        G8 = self._res_module_2(d03 + d14 + d2) 
+
+        G81 = self._res_module_3(self._res_module_2(d03 + d14) + d2)
+        G82 = self._res_module_3(self._res_module_2(d03 +  d2) + d14)
+        G83 = self._res_module_3(self._res_module_2(d14 +  d2) + d03)
+        G8 =  self._res_module_4(G81 + G82 + G83)
         
         # [1,4,3,5,2],
-        G9 = self._res_module_2(d03 + d24 + d1) 
+        
+        G91 = self._res_module_3(self._res_module_2(d03 + d24) + d1)
+        G92 = self._res_module_3(self._res_module_2(d03 +  d1) + d24)
+        G93 = self._res_module_3(self._res_module_2(d24 +  d1) + d03)
+        G9 =  self._res_module_4(G91 + G92 + G93)
         
         # [1,5,2,3,4],
-        G10 = self._res_module_2(d04 + d12 + d3)
+        
+        G101 = self._res_module_3(self._res_module_2(d04 + d12) + d3)
+        G102 = self._res_module_3(self._res_module_2(d04 +  d3) + d12)
+        G103 = self._res_module_3(self._res_module_2(d12 +  d3) + d04)
+        G10 =  self._res_module_4(G101 + G102 + G103)
         
         # [1,5,2,4,3],
-        G11 = self._res_module_2(d04 + d13 + d2)
-        
+
+        G111 = self._res_module_3(self._res_module_2(d04 + d13) + d2)
+        G112 = self._res_module_3(self._res_module_2(d04 +  d2) + d13)
+        G113 = self._res_module_3(self._res_module_2(d13 +  d2) + d04)
+        G11 =  self._res_module_4(G111 + G112 + G113)
+
         # [1,5,3,4,2],
-        G12 = self._res_module_2(d04 + d23 + d1)
+
+        G121 = self._res_module_3(self._res_module_2(d04 + d23) + d1)
+        G122 = self._res_module_3(self._res_module_2(d04 +  d1) + d23)
+        G123 = self._res_module_3(self._res_module_2(d23 +  d1) + d04)
+        G12 =  self._res_module_4(G121 + G122 + G123)
         
         # [2,3,4,5,1],
-        G13 = self._res_module_2(d12 + d34 + d0)
+
+        G131 = self._res_module_3(self._res_module_2(d12 + d34) + d0)
+        G132 = self._res_module_3(self._res_module_2(d12 +  d0) + d34)
+        G133 = self._res_module_3(self._res_module_2(d34 +  d0) + d12)
+        G13 =  self._res_module_4(G131 + G132 + G133)
         
         # [2,4,3,5,1],
-        G14 = self._res_module_2(d13 + d24 + d0)
+
+        G141 = self._res_module_3(self._res_module_2(d13 + d24) + d0)
+        G142 = self._res_module_3(self._res_module_2(d13 +  d0) + d24)
+        G143 = self._res_module_3(self._res_module_2(d24 +  d0) + d13)
+        G14 =  self._res_module_4(G141 + G142 + G143)
         
         # [2,5,3,4,1]
+
         G15 = self._res_module_2(d14 + d23 + d0) 
+
+        G11 = self._res_module_3(self._res_module_2(d14 + d23) + d0)
+        G12 = self._res_module_3(self._res_module_2(d14 +  d0) + d23)
+        G13 = self._res_module_3(self._res_module_2(d23 +  d0) + d14)
+        G1 =  self._res_module_4(G11 + G12 + G13)
 
 
         x = torch.cat([torch.unsqueeze(G1,1), 
@@ -326,52 +396,6 @@ class _Model(torch.nn.Module):
 
         # this is the structure preserving embedding
         g =  self.embedding_layer(x)
-        
-        # # TODO: this should be implemented by reshape
-        # # and permute
-        # x1 = g[:,0,:,:]
-        # x2 = g[:,1,:,:]
-        # x3 = g[:,2,:,:]
-        # x4 = g[:,3,:,:]
-        # x5 = g[:,4,:,:]
-        # x6 = g[:,5,:,:]
-        # x7 = g[:,6,:,:]
-        # x8 = g[:,7,:,:]
-        # x9 = g[:,8,:,:]
-        # x10 = g[:,9,:,:]
-        # x11 = g[:,10,:,:]
-        # x12 = g[:,11,:,:]
-        # x13 = g[:,12,:,:]
-        # x14 = g[:,13,:,:]
-        # x15 = g[:,14,:,:]
-        
-        # # (none,embeding_dim, 1550)
-
-        # # contanenation in the batch dimesion
-        # # (15*none, 80, 1550)
-        # X = torch.cat([x1, x2, x3, x4, x5,
-        #                x6, x7, x8, x9, x10,
-        #                x11, x12, x13, x14, x15], dim  = 0)
-
-        # # (15*none, 1550, hidden_dim)
-        # r_output, hidden = self.rnn(X.permute([0, 2, 1]))
-
-        # # TODO: perhaps add an attention layer here!
-        # # extracting only the last in the sequence
-        # # (3*none, hidden_dim)
-        # r_output_last = r_output[:, -1, :] 
-
-        # # not sure if this helps
-        # out = r_output_last.contiguous().view(-1, self.hidden_dim)
-        
-        # # (3*none, out_put_dimensions)
-        # output = self.fc(out)
-
-        # X_combined = self.classifier(output) 
-        # # (3*none, 1)
-
-        # X_combined = X_combined.view(15, batch_size)
-
         
         # (none,embeding_dim, 1550)
 
