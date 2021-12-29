@@ -176,20 +176,20 @@ class _ResidualModule(torch.nn.Module):
         return x + self.layers(x)
 
 
-class _ResidualSequential(torch.nn.Module):
-    # class to chain residual models easily 
+# class _ResidualSequential(torch.nn.Module):
+#     # class to chain residual models easily 
 
-    def __init__(self, num_layers, channel_count):
-        super().__init__()
+#     def __init__(self, num_layers, channel_count):
+#         super().__init__()
 
-        layers = []
-        for i in range(num_layers):
-            layers.append(_ResidualModule(channel_count))
+#         layers = []
+#         for i in range(num_layers):
+#             layers.append(_ResidualModule(channel_count))
 
-        self.layers = torch.nn.Sequential(*layers)
+#         self.layers = torch.nn.Sequential(*layers)
 
-    def forward(self, x):
-        return self.layers(x)
+#     def forward(self, x):
+#         return self.layers(x)
 
 
 class _DoubleEmbedding(torch.nn.Module):
@@ -408,7 +408,7 @@ class _Model(torch.nn.Module):
         device = x.device
         batch_size = x.size()[0]
         
-        # counte the number of equal proteins in a site 
+        # counter the number of equal proteins in a site 
 
         # this is the structure preserving embedding
         g =  self.embedding_layer(x)
@@ -449,7 +449,7 @@ dataloaderTrain = torch.utils.data.DataLoader(datasetTrain,
                                               pin_memory=True)
 
 dataloaderTest = torch.utils.data.DataLoader(datasetTest,
-                                             batch_size=batch_size,
+                                             batch_size=8,
                                              shuffle=True)
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
