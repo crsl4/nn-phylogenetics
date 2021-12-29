@@ -159,7 +159,7 @@ datasetTest = data.TensorDataset(inputTest, outputTest)
 
 ## copy paste from the Zou 2019 model
 # here is the residue block
-class _ResidueModule(torch.nn.Module):
+class _ResidualModule(torch.nn.Module):
 
     def __init__(self, channel_count):
         super().__init__()
@@ -176,6 +176,22 @@ class _ResidueModule(torch.nn.Module):
         return x + self.layers(x)
 
 
+class _ResidualSequential(torch.nn.Module):
+    # class to chain residual models easily 
+
+    def __init__(self, num_layers, channel_count):
+        super().__init__()
+
+        layers = []
+        for i in range(num_layers):
+            layers.append(_ResidualModule(channel_count))
+
+        self.layers = torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
+
+
 class _DoubleEmbedding(torch.nn.Module):
     # we use first an embedding for the 
 
@@ -183,10 +199,10 @@ class _DoubleEmbedding(torch.nn.Module):
         super().__init__()
         
         self.embedding_layer = nn.Embedding(length_dict, embeding_dim)
-        self._res_module_1 = _ResidueModule(embeding_dim)
-        self._res_module_2 = _ResidueModule(embeding_dim)
-        self._res_module_3 = _ResidueModule(embeding_dim)
-        self._res_module_4 = _ResidueModule(embeding_dim)
+        self._res_module_1 = _ResidualModule(embeding_dim)
+        self._res_module_2 = _ResidualModule(embeding_dim)
+        self._res_module_3 = _ResidualModule(embeding_dim)
+        self._res_module_4 = _ResidualModule(embeding_dim)
 
     def forward(self, x):
         # (none, 4, 1550)
