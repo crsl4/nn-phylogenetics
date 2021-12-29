@@ -47,6 +47,10 @@ batch_size = dataJson["batchSize"]       # batch size
 dataRoot = dataJson["dataRoot"]          # data folder
 modelRoot = dataJson["modelRoot"]        # folder to save the data
 
+embeding_dim = dataJson["embedding_dimension"]
+hidden_dim = dataJson["hidden_dimension"]
+num_layers = dataJson["n_layers_lstm"]
+
 labelFiles = dataJson["labelFile"]        # file with labels
 sequenceFiles = dataJson["matFile"]            # file with sequences
 
@@ -418,11 +422,13 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 criterion = torch.nn.CrossEntropyLoss(reduction='mean')
 # criterion = torch.nn.CrossEntropyLoss()
 
+# define the model
 # dropout /TODO: add to the input json file
 dropout = 0.2
 
 # define the model
-model = _Model(dropout = 0.2).to(device)
+model = _Model(embeding_dim, hidden_dim, 
+               num_layers, dropout=dropout).to(device)
 # model = torch.jit.script(_Model(dropout = dropout)).to(device)
 
 def count_parameters(model):
