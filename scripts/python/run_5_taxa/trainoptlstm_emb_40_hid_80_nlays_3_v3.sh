@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 #SBATCH --partition=research
-#SBATCH --time=1-1:0:0
-#SBATCH --mem 16000
-#SBATCH --cpus-per-task=4
+#SBATCH --time=2-1:0:0
+#SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:1
+#SBATCH --constraint="ampere|turing"
 
 module load anaconda/full/2021.05
 bootstrap_conda
