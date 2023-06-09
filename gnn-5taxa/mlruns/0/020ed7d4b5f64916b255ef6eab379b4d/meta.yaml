@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/Xudong/Git/nn-phylogenetics/gnn-5taxa/mlruns/0/020ed7d4b5f64916b255ef6eab379b4d/artifacts
+end_time: 1686271219785
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 020ed7d4b5f64916b255ef6eab379b4d
+run_name: intrigued-stoat-50
+run_uuid: 020ed7d4b5f64916b255ef6eab379b4d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1686264127121
+status: 3
+tags: []
+user_id: Xudong
