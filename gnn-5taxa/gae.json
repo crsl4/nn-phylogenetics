@@ -11,7 +11,7 @@
     "treeFile":          "trees12062021.in",
     "matFile":           "sequences12062021.in",
     "_comment":         "that's all",
-    "nEpochs":           50,
+    "nEpochs":           100,
     "gamma":             0.98,
     "lrSteps":           10,
     "summaryFile":      "gae_training.out",
