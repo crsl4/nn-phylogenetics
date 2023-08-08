@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Import Packages and environmental setup
+
+# In[9]:
+
+
 import numpy as np
 import random
 import ete3
@@ -27,11 +35,21 @@ from torch.nn import Linear
 from ete3 import Tree
 gc.collect()
 
+
+# # Device
+
+# In[10]:
+
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-# Functions
+# # Functions
+
 # The internal node will be in the order of 5-7-6, the single tip will always be connected to node 7
+# 
+
+# In[11]:
 
 
 # function to convert string to numbers
@@ -46,22 +64,47 @@ def convert_string_to_numbers(str, dict):
     return np.fromiter(numbers, dtype=np.int64)
 
 
+# In[12]:
+
+
+# Function to create all node features in a graph
+def get_all_nodes(idx):
+    node_str = []  # all amino acid sequence in a graph
+    site_count = [[] for _ in range(seq_length)]
+    for i in range(5):
+        # Count number of amino acid at each site
+        # get the index of the sequence from the original dataset
+        seq_idx = 5*idx + i
+        node_str.append(seq_string[seq_idx][:-1])
+        for j in range(seq_length):
+            site_count[j].append(seq_string[seq_idx][j])
+
+    node_in = []
+
+    for i in range(seq_length):
+        node_in.append(random.choice(site_count[i]))
+
+    internal_node = ''.join(node_in)
+
+    for i in range(3):
+        node_str.append(internal_node)
+    
+    return node_str
+
+
+# In[13]:
+
+
 # function to create a graph for each 
 def construct_single_graph(idx, t):
     ''' idx: the current graph index w.r.t the label
         t: the tree object from ete'''
     # transform the character of amino acid in to numbers for all 5 sequences in this graph
+    all_node = []
+    all_node = get_all_nodes(idx)
     transformed_x = []
-    for i in range(5):
-        # get the index of the sequence from the original dataset
-        seq_idx = 5*idx + i
-        transformed_x.append(convert_string_to_numbers(seq_string[seq_idx][:-1], dict_amino))
-        
-    # initialize the sequence of 3 internal nodes
-    vec_len = len(transformed_x[0])
-    internal_node_5 = np.full(vec_len, -1, dtype=np.int64)
-    internal_node_6 = np.full(vec_len, -1, dtype=np.int64)
-    internal_node_7 = np.full(vec_len, -1, dtype=np.int64)
+    for node_idx in range(len(all_node)):
+        transformed_x.append(convert_string_to_numbers(all_node[node_idx], dict_amino))
     
     # Work out the branch distance from the Newick format
     leaf_pair = 0               # The amount of leaf pair so far, max=2
@@ -131,10 +174,7 @@ def construct_single_graph(idx, t):
                  dist_array[6], dist_array[6],
                  dist_array[preorder[0]], dist_array[preorder[0]],
                  dist_array[preorder[1]], dist_array[preorder[1]]]
-        # Assign the value for internal node 5 and 6, based on the 2 leaf node they are connected with
-        for j in range(0,vec_len):
-            internal_node_5[j] = random.choice([transformed_x[preorder[2]][j],transformed_x[preorder[3]][j]])
-            internal_node_6[j] = random.choice([transformed_x[preorder[0]][j],transformed_x[preorder[1]][j]])
+
     # Same thing, but now the smaller node number is on the left, thus connected with node 5
     else:
         edge_index = torch.tensor([[preorder[0],5],[5,preorder[0]],[preorder[1],5],[5,preorder[1]],
@@ -148,17 +188,7 @@ def construct_single_graph(idx, t):
                  dist_array[6], dist_array[6],
                  dist_array[preorder[2]], dist_array[preorder[2]],
                  dist_array[preorder[3]], dist_array[preorder[3]]]
-        for j in range(0,vec_len):
-            internal_node_5[j] = random.choice([transformed_x[preorder[0]][j],transformed_x[preorder[1]][j]])
-            internal_node_6[j] = random.choice([transformed_x[preorder[2]][j],transformed_x[preorder[3]][j]])
-    # Assign value for internal node 7, based on internal node 5&6, and leaf node 4
-    for j in range(0,vec_len):
-        internal_node_7[j] = random.choice([internal_node_5[j], internal_node_6[j], 
-                                           transformed_x[preorder[4]][j]])
-    # append all node feature into an array
-    transformed_x.append(internal_node_5)
-    transformed_x.append(internal_node_6)
-    transformed_x.append(internal_node_7)
+       
     concat_x = np.array( transformed_x )
     # create the node feature vector
     x = torch.tensor(concat_x, dtype=torch.float)
@@ -167,8 +197,14 @@ def construct_single_graph(idx, t):
     return data
 
 
+# In[14]:
+
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+# In[15]:
 
 
 # select the correct adjacency matrix of one graph
@@ -181,10 +217,16 @@ def select_graph_original(graph_id, batch_targets, batch_index):
     return graph_targets[triu_mask]
 
 
+# In[16]:
+
+
 # select the predicted adjacency matrix of one graph
 def select_graph_prediction(triu_logit, graph_size, start):
     graph_triu_logit = torch.squeeze(triu_logit[start:start + graph_size])
     return graph_triu_logit
+
+
+# In[17]:
 
 
 def kl_loss(mu=None, logstd=None):
@@ -195,6 +237,9 @@ def kl_loss(mu=None, logstd=None):
     # Limit numeric errors
     kl_div = kl_div.clamp(max=1000)
     return kl_div
+
+
+# In[18]:
 
 
 def loss_func(triu_logits, edge_index, mu, logvar, batch_index, kl_beta):
@@ -224,6 +269,9 @@ def loss_func(triu_logits, edge_index, mu, logvar, batch_index, kl_beta):
     return batch_recon_loss + kl_beta * kl_divergence, kl_divergence
 
 
+# In[19]:
+
+
 def check_triu_graph_reconstruction(graph_predictions_triu, graph_targets_triu, num_nodes=None):
     # Apply sigmoid to get binary prediction values
     preds = (torch.sigmoid(graph_predictions_triu.view(-1)) > 0.5).int()
@@ -233,6 +281,9 @@ def check_triu_graph_reconstruction(graph_predictions_triu, graph_targets_triu, 
     if labels.shape[0] == sum(torch.eq(preds, labels)):
         return True
     return False
+
+
+# In[20]:
 
 
 # Get the accuracy for each epoch (both train and test)
@@ -267,6 +318,181 @@ def reconstruction_accuracy(triu_logits, edge_index, batch_index):
     return acc.detach().cpu().numpy(), num_recon    
 
 
+# In[21]:
+
+
+def construct_testing_set(idx):
+    one_set = []
+    all_node = []
+    all_node = get_all_nodes(idx)
+    transformed_x = []
+    for node_idx in range(len(all_node)):
+        transformed_x.append(convert_string_to_numbers(all_node[node_idx], dict_amino))
+    concat_x = np.array( transformed_x )
+    x = torch.tensor(concat_x, dtype=torch.float)
+    # 0
+    edge_index = torch.tensor([[0,5],[5,0],[1,5],[5,1],
+                                   [5,7],[7,5],[4,7],[7,4],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [3,6],[6,3]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 1
+    edge_index = torch.tensor([[0,5],[5,0],[1,5],[5,1],
+                                   [5,7],[7,5],[3,7],[7,3],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 2
+    edge_index = torch.tensor([[0,5],[5,0],[1,5],[5,1],
+                                   [5,7],[7,5],[2,7],[7,2],
+                                   [7,6],[6,7],[3,6],[6,3],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 3
+    edge_index = torch.tensor([[0,5],[5,0],[2,5],[5,2],
+                                   [5,7],[7,5],[4,7],[7,4],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [3,6],[6,3]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 4
+    edge_index = torch.tensor([[0,5],[5,0],[2,5],[5,2],
+                                   [5,7],[7,5],[3,7],[7,3],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 5
+    edge_index = torch.tensor([[0,5],[5,0],[2,5],[5,2],
+                                   [5,7],[7,5],[1,7],[7,1],
+                                   [7,6],[6,7],[3,6],[6,3],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 6
+    edge_index = torch.tensor([[0,5],[5,0],[3,5],[5,3],
+                                   [5,7],[7,5],[4,7],[7,4],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [2,6],[6,2]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 7
+    edge_index = torch.tensor([[0,5],[5,0],[3,5],[5,3],
+                                   [5,7],[7,5],[2,7],[7,2],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 8
+    edge_index = torch.tensor([[0,5],[5,0],[3,5],[5,3],
+                                   [5,7],[7,5],[1,7],[7,1],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 9
+    edge_index = torch.tensor([[0,5],[5,0],[4,5],[5,4],
+                                   [5,7],[7,5],[3,7],[7,3],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [2,6],[6,2]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 10
+    edge_index = torch.tensor([[0,5],[5,0],[4,5],[5,4],
+                                   [5,7],[7,5],[2,7],[7,2],
+                                   [7,6],[6,7],[1,6],[6,1],
+                                   [3,6],[6,3]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 11
+    edge_index = torch.tensor([[0,5],[5,0],[4,5],[5,4],
+                                   [5,7],[7,5],[1,7],[7,1],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [3,6],[6,3]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 12
+    edge_index = torch.tensor([[1,5],[5,1],[2,5],[5,2],
+                                   [5,7],[7,5],[0,7],[7,0],
+                                   [7,6],[6,7],[3,6],[6,3],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 13
+    edge_index = torch.tensor([[1,5],[5,1],[3,5],[5,3],
+                                   [5,7],[7,5],[0,7],[7,0],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [4,6],[6,4]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+    # 14
+    edge_index = torch.tensor([[1,5],[5,1],[4,5],[5,4],
+                                   [5,7],[7,5],[0,7],[7,0],
+                                   [7,6],[6,7],[2,6],[6,2],
+                                   [3,6],[6,3]], dtype=torch.long)
+    data = Data(x=x, edge_index=edge_index.t().contiguous())
+    one_set.append(data)
+
+    return one_set
+
+
+# In[30]:
+
+
+def run_val_epoch(data_loader, epoch, kl_beta, true_label):
+    loss_group = []
+    acc_group = []
+    idx = 0
+    correct_prediction = 0
+    # 15 graph is a group
+    counter = 0
+    for i, batch in enumerate(tqdm(data_loader)):
+        try:    
+            counter += 1
+            batch.to(device)
+            optimizer.zero_grad()
+            triu_logits, mu, logvar = model(batch.x.float(), batch.edge_index, batch.batch)
+            loss, kl_loss = loss_func(triu_logits, batch.edge_index, mu, logvar, batch.batch, kl_beta)
+            acc, num_recon = reconstruction_accuracy(triu_logits, batch.edge_index, batch.batch)
+            loss_group.append(loss.detach().cpu().numpy())
+            acc_group.append(acc)
+            
+            
+            if counter == 15:
+                counter = 0
+                biggest_acc = max(acc_group)
+                all_max_acc = [i for i in range(len(acc_group)) if acc_group[i] == biggest_acc]
+                min_loss = 100
+                predicted = -1
+                
+                if idx < 20:
+                    print(f"Acc: {acc_group}")
+                    print(f"Loss: {loss_group}")
+                
+                for k in all_max_acc:
+                    if loss_group[k] < min_loss:
+                        min_loss = loss_group[k]
+                        predicted = k + 1
+                
+                acc_group = []
+                loss_group = []
+                if true_label[idx] == predicted:
+                    print(f"Correct label: {predicted}")
+                    correct_prediction += 1
+                idx += 1
+                
+        except IndexError as error:
+            print("Error: ", error)
+    
+    print(f"epoch {epoch} space search accuracy: {correct_prediction/1000}")
+
+
+# In[23]:
+
+
 def run_one_epoch(data_loader, type, epoch, kl_beta):
     all_losses = []
     all_accs = []
@@ -286,10 +512,6 @@ def run_one_epoch(data_loader, type, epoch, kl_beta):
             # Calculate metrics
             acc, num_recon = reconstruction_accuracy(triu_logits, batch.edge_index, batch.batch)
             reconstructed_tree = reconstructed_tree + num_recon
-            if type == "Train":
-                reconstructed_perc = reconstructed_tree/9000
-            else:
-                reconstructed_perc = reconstructed_tree/1000
             
             all_losses.append(loss.detach().cpu().numpy())
             all_accs.append(acc)
@@ -299,16 +521,17 @@ def run_one_epoch(data_loader, type, epoch, kl_beta):
     
     print(f"{type} epoch {epoch} loss: ", np.array(all_losses).mean())
     print(f"{type} epoch {epoch} accuracy: ", np.array(all_accs).mean())
-    print(f"Reconstructed {reconstructed_perc}.")
+    print(f"Reconstructed {reconstructed_tree}.")
     mlflow.log_metric(key=f"{type} Epoch Loss", value=float(np.array(all_losses).mean()), step=epoch)
     mlflow.log_metric(key=f"{type} Epoch Accuracy", value=float(np.array(all_accs).mean()), step=epoch)
-    mlflow.log_metric(key=f"{type} Percentage Reconstructed", value=float(reconstructed_perc), step=epoch)
+    mlflow.log_metric(key=f"{type} Num Reconstructed", value=float(reconstructed_tree), step=epoch)
     mlflow.log_metric(key=f"{type} KL Divergence", value=float(np.array(all_kldivs).mean()), step=epoch)
-    #mlflow.log_model(model, "model")
-    
 
 
-# Model
+# # Model
+
+# In[24]:
+
 
 class GVAE(nn.Module):
     def __init__(self, feature_size, embedding_size, edge_dim):
@@ -449,7 +672,9 @@ class GVAE(nn.Module):
             
 
 
-# File inputs
+# # File inputs
+
+# In[25]:
 
 
 # get name of the script
@@ -504,6 +729,10 @@ with open(data_root+sequence_files, 'r') as f:
 with open(data_root+tree_files, 'r') as f:
     tree_newick = f.readlines()
     
+labels = np.fromiter(map(lambda x: int(x[0])-1,
+                         label_char), dtype= np.int64)
+val_labels = labels[9000:10000]
+
 n_samples = len(label_char)
 seq_length = len(seq_string[0])-1
 print("Number of samples:{}; Sequence length of each sample:{}"
@@ -511,8 +740,10 @@ print("Number of samples:{}; Sequence length of each sample:{}"
 print("------------------------------------------------------------------------")
 
 
-# Data pre-processing
+# # Data pre-processing
 # Read Sequence data and Newick tree format, return the all graph object with necessary info in the structure
+
+# In[26]:
 
 
 # We need to extract the dictionary with the relative positions
@@ -538,6 +769,9 @@ labels = np.fromiter(map(lambda x: int(x[0])-1,
                          label_char), dtype= np.int64)
 
 
+# In[27]:
+
+
 # Create all graphs from raw dataset
 # EXTREMELY SLOW
 dataset = []  # empty dataset for all graphs
@@ -556,7 +790,22 @@ for i in range(n_samples):
     dataset.append(data)
 
 
-# Training
+# In[28]:
+
+
+val_dataset = []
+for i in range(9000, 10000):
+    one_dataset = construct_testing_set(i)
+    for data in one_dataset:
+        if (not data.validate(raise_on_error=True)):
+            print("Error! Node number and edge set does not match!")
+            break
+        val_dataset.append(data)
+
+
+# # Training
+
+# In[31]:
 
 
 # Load data
@@ -565,6 +814,7 @@ train_dataset = dataset[:9000]
 test_dataset = dataset[9000:]
 train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=True)
+validate_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 print("------------------------------------------------------------------------")
 print("Data loaded, loading model...")
 # Load model
@@ -573,13 +823,24 @@ print("Number of parameters in the model: ", count_parameters(model))
 print("------------------------------------------------------------------------")
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+#exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10, gamma=0.9)
 
 with mlflow.start_run() as run:
-    for epoch in range(nEpochs): 
+    for epoch in range(1, nEpochs+1): 
         model.train()
         run_one_epoch(train_loader, type="Train", epoch=epoch, kl_beta=kl_beta)
         if epoch % 5 == 0:
             print("Evluating testset...")
             model.eval()
             run_one_epoch(test_loader, type="Test", epoch=epoch, kl_beta=kl_beta)
+        if epoch % 25 == 0:
+            print("Running tree space search...")
+            model.eval()
+            run_val_epoch(validate_loader, epoch=epoch, kl_beta=kl_beta, true_label=labels)
+
+
+# In[ ]:
+
+
+
 
