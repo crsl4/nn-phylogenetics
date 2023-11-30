@@ -8,7 +8,6 @@
     "dataRoot":          "dataset/",
     "matFile":         ["sequences88422-1.0-2.0-1.0.in", "sequences114134-1.0-10.0-1.0.in", "sequences346266-1.0-40.0-1.0.in"],
     "labelFile":        ["labels88422-1.0-2.0-1.0.in", "labels114134-1.0-10.0-1.0.in", "labels346266-1.0-40.0-1.0.in"],
-    "test_case":        0,
     "_comment":         "that's all",
     "nEpochs":           200,
     "gamma":             0.98,
