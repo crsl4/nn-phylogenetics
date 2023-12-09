@@ -1,10 +1,11 @@
 ## For this project
 data
-simulations
+simulation/sim-results/*
 *.h5
 *.in
 ms/research-fwd-init-phylo-nn/*
 phylo-nn-googledrive/*
+resources/*
 
 # Compiled source #
 ###################
