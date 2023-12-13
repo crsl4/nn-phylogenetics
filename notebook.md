@@ -1571,23 +1571,6 @@ Careful: this and previous scripts are not exploiting the fact that we could gen
 
 After all work done on quartets, we want to explore the quintets again. See below.
 
-# Onboarding Zelin and Shengwen
-
-Thanks for agreeing to work on this project! We are excited to have you on board.
-
-Next steps:
-1. You will receive an invitation to the slack workspace. I hope to use mostly slack to communicate as a group
-2. You will receive an invitation to the [google drive](https://drive.google.com/drive/u/2/folders/0ACu5ePKXaJaiUk9PVA) where the simulated data is stored
-3. You will receive an invitation to the [github repo](https://github.com/crsl4/nn-phylogenetics) where the scripts are stored. You will have push permissions in the repo, so please make sure to read and adhere to the best computing practices [guidelines](https://github.com/crsl4/mindful-programming/blob/master/lecture.md)
-4. Fill out this form: https://www.when2meet.com/?10101364-VKPxm to identify a time that will work regularly to meet as a group. I chose next week as the week in the poll, but chose times that work for you every week of the semester. We can decide if we start next week or in two weeks. We also need to decide if we want to meet every week or every two weeks. Personally, I prefer every two weeks this semester, but we can discuss later (we can do this discussion in slack)
-5. Check out the project plan (with list of main papers) in the github repo. Also, expect an email from Leo with more info about the code
-6. You will receive an invitation to the [Paperpile folder](https://paperpile.com/app/shared/2qGDFH) where we keep track of the papers for this project
-
-After this email, I hope we can keep communicating via slack where I will also post this same message and we can discuss on the frequency of regular meetings.
-
-Thanks,
-Claudia
-
 
 # Notes from new Leo code (meeting 2/18)
 
@@ -2462,7 +2445,7 @@ tr <- root(tre, 1, resolve.root=TRUE)
 new_tiplabels <- c("Mus_musculus", "Simiiformes_Cambodia", "Macaca_mulatta", "Homo_sapiens_Brazil", "Simiiformes_Uganda", "Homo_sapiens_Honduras")
 tr$tip.label <- new_tiplabels
 
-plot(tr)
+plot(tr, use.edge.length=FALSE)
 ```
 
 Tree by IQ-Tree:
@@ -2477,7 +2460,7 @@ new_tiplabels2 <- c("Mus_musculus", "Simiiformes_Cambodia",
 
 tr2$tip.label <- new_tiplabels2
 
-plot(tr2)
+plot(tr2, use.edge.length=FALSE)
 ```
 
 This tree is also weird. IQ-Tree has Simiiformes as the most derived clade, Humans do not form a clade, and Macaca is in between human samples.
@@ -2529,4 +2512,42 @@ for j in 1:length(taxa)
    write(io, "\n")
 end
 close(io)
+```
+
+## Creating the plot for the manuscript
+
+Reading IQtree
+```r
+tre2 = read.tree("data/FASTA.fa.treefile")
+
+## Root at 1:
+tr2 <- root(tre2, "AXF50052", resolve.root=TRUE)
+
+new_tiplabels2 <- c("Mus_musculus", "Simiiformes_Cambodia", 
+"Simiiformes_Uganda", "Homo_sapiens_Japan", "Macaca_mulatta", "Homo_sapiens_Honduras", "Homo_sapiens_Brazil")
+
+tr2$tip.label <- new_tiplabels2
+
+tr3 <- drop.tip(tr2, 3:4)
+
+plot(tr3)
+```
+
+Reading our tree
+```r
+ttr <- read.tree(text="(Mus_musculus,(Homo_sapiens_Brazil,(Macaca_mulatta,(Simiiformes_Cambodia, Homo_sapiens_Japan))));")
+plot(ttr)
+
+ttr2 <- rotate(ttr, 6)
+ttr3 <- rotate(ttr2, 7)
+ttr4 <- rotate(ttr3, 8)
+
+plot(ttr4)
+
+pdf("plots/zika-trees.pdf",width=8, height=4)
+par(mfrow=c(1,2), mar = c(0, 0, 1, 0))
+plot(tr3, main="IQ-Tree")
+plot(ttr4, main="OptLSTM")
+dev.off()
+
 ```
