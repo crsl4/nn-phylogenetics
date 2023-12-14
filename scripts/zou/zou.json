@@ -1,16 +1,15 @@
-{
+{    
     "with_distrib":     false,
     "_comment":         " model parameters",
     "ngpu":              1,
     "lr":                0.001,
     "batchSize":         16,
-    "modelRoot":         "composite_data_",
+    "modelRoot":         "result",
     "dataRoot":          "dataset/",
     "matFile":         ["sequences88422-1.0-2.0-1.0.in", "sequences114134-1.0-10.0-1.0.in", "sequences346266-1.0-40.0-1.0.in"],
     "labelFile":        ["labels88422-1.0-2.0-1.0.in", "labels114134-1.0-10.0-1.0.in", "labels346266-1.0-40.0-1.0.in"],
     "_comment":         "that's all",
-    "nEpochs":           200,
+    "nEpochs":           300,
     "gamma":             0.98,
-    "lrSteps":           10,
-    "summaryFile":      "Opttraining1300.out"
+    "lrSteps":           10
 }

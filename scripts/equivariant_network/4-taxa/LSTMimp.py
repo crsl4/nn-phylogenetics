@@ -21,10 +21,10 @@ from utilities import SequenceDataSet
 import gc
 
 gc.collect()
-nameScript = sys.argv[0].split('/')[-1]
+nameScript = "LSTMimp.py"
 
 # we are going to give all the arguments using a Json file
-nameJson = sys.argv[1]
+nameJson = "4-taxa.json"
 print("=================================================")
 print("Executing " + nameScript + " following " + nameJson, flush = True)
 print("=================================================")
